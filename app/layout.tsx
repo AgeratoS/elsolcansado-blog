@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { FluidCursor } from "@/shared/ui/FluidCursor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,10 +26,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased cursor-none`}
       >
+        <FluidCursor />
         <div className="grid min-h-screen grid-cols-1 grid-rows-[minmax(1fr, 80px)_1fr] md:grid-cols-(--grid-layout) md:grid-rows-none">
-          <header className="flex bg-ui-gray-200">
+          <header className="flex bg-ui-gray-200 max-h-screen">
             <nav className="flex flex-1 flex-row md:flex-col items-center justify-between py-2 px-10 md:px-0 md:py-10">
               <button>
                 <svg

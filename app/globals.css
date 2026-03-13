@@ -192,6 +192,10 @@
     font-weight: 600;
     letter-spacing: var(--tracking-tight);
   }
+
+  a, button {
+    cursor: none
+  }
 }
 
 @layer components {
