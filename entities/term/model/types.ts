@@ -31,6 +31,7 @@ export interface GetTermsParams {
   slug?: string | string[];
   hideEmpty?: boolean;
   parent?: number;
+  include?: number | number[];
 }
 
 export const mapWpTermToTerm = (raw: WpTerm): Term => ({

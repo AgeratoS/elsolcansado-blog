@@ -26,8 +26,8 @@ const buildQueryString = (params: WpQueryParams): string => {
   return qs ? `?${qs}` : "";
 };
 
-const wpFetch = async <T>(path: string, params: WpQueryParams = {}): Promise<T> => {
-  const qs = buildQueryString(params);
+const wpFetch = async <T>(path: string, params: Record<string, unknown> = {}): Promise<T> => {
+  const qs = buildQueryString(params as WpQueryParams);
   const url = `${WP_API_BASE_URL.replace(/\/$/, "")}/wp-json/wp/v2${path}${qs}`;
 
   const res = await fetch(url, {
@@ -60,6 +60,7 @@ export const getCategories = async (params: GetTermsParams = {}): Promise<Term[]
     slug: normalizeSlug(rest.slug),
     hide_empty: rest.hideEmpty,
     parent: rest.parent,
+    include: rest.include,
   });
 
   return data.map(mapWpTermToTerm);
@@ -75,6 +76,7 @@ export const getTags = async (params: GetTermsParams = {}): Promise<Term[]> => {
     slug: normalizeSlug(rest.slug),
     hide_empty: rest.hideEmpty,
     parent: rest.parent,
+    include: rest.include,
   });
 
   return data.map(mapWpTermToTerm);

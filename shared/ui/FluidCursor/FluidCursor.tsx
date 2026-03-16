@@ -68,7 +68,7 @@ export function FluidCursor() {
         "a, button, .interactive, [data-cursor-expand]",
       );
       const copyable = target.closest<HTMLElement>(
-        "h1, h2, h3, h4, h5, h6, p, span",
+        "h1, h2, h3, h4, h5, h6, p, span, code",
       );
 
       if (interactive) {

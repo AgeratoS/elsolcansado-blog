@@ -349,7 +349,7 @@
   }
 
   .post p {
-    @apply text-sm md:text-lg;
+    @apply text-lg;
   }
 
   .post h2,
@@ -410,8 +410,8 @@
 
   .post pre,
   .post code {
+    @apply text-lg;
     font-family: var(--font-mono);
-    font-size: 0.9rem;
   }
 
   .post pre {
@@ -419,6 +419,10 @@
     padding: 1rem 1.25rem;
     border-radius: var(--radius-lg);
     overflow-x: auto;
+  }
+
+  .post details {
+    @apply text-lg;
   }
 
   .post hr {
