@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useSpring, useMotionValue, useTransform } from "framer-motion";
 
 const springConfig = { damping: 25, stiffness: 200, mass: 0.5 };
@@ -17,8 +17,25 @@ export function FluidCursor() {
   const borderRadius = useMotionValue("50%");
   const isHovering = useMotionValue(0); // 0 = нет, 1 = да
 
-  // 🌀 Пружинная физика
+  const [hasPrecisePointer, setHasPrecisePointer] = useState(false);
 
+  // 🌀 Пружинная физика
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(pointer: fine)");
+
+    const updatePointerType = () => {
+      if (window.matchMedia("(pointer: fine)").matches) {
+        setHasPrecisePointer(true);
+      } else {
+        setHasPrecisePointer(false);
+      }
+    }
+
+    updatePointerType();
+
+    mediaQuery.addEventListener("change", updatePointerType);
+    return () => mediaQuery.removeEventListener("change", updatePointerType);
+  }, []);
   const xSpring = useSpring(x, springConfig);
   const ySpring = useSpring(y, springConfig);
   const widthSpring = useSpring(width, springConfig);
@@ -85,6 +102,10 @@ export function FluidCursor() {
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
+
+  if (!hasPrecisePointer) {
+    return null;
+  }
 
   return (
     <motion.div

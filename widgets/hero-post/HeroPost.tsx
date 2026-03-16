@@ -1,11 +1,11 @@
+import { PostListItem } from "@/entities/post/model/types";
 import * as motion from "framer-motion/client";
-import {ReactNode} from "react";
 
 interface HeroPostProps {
-    title?: ReactNode;
+  post: PostListItem;
 }
 
-export function HeroPost(props: HeroPostProps) {
+export function HeroPost({ post }: HeroPostProps) {
   return (
     <motion.div className="min-h-screen bg-ui-gray-50 relative">
       {/* Content block */}
@@ -45,17 +45,14 @@ export function HeroPost(props: HeroPostProps) {
         >
           <div className="md:max-w-full">
             <h3 className="text-ui-white text-5xl mb-3 md:mb-6 line-clamp-3 xl:text-7xl">
-                {props.title}
+                {post.title}
             </h3>
 
-            <p className="text-ui-gray-300 mb-8 md:mb-12 xl:text-2xl">
-              Wow! This was amazing for my last trip. please checkout my recent
-              vlogs on my Youtube channel.
-            </p>
+            <div className="text-ui-gray-300 mb-8 md:mb-12 xl:text-2xl" dangerouslySetInnerHTML={{ __html: post.excerptHtml }} />
 
-            <button className="py-6 px-10 min-w-xs bg-[#00000067] text-ui-gray-300 xl:text-2xl">
+            <a href={`/posts/${post.id}`} className="py-6 px-10 min-w-xs bg-[#00000067] text-ui-gray-300 xl:text-2xl">
               Читать далее
-            </button>
+            </a>
           </div>
 
           <motion.div

@@ -134,7 +134,7 @@ export default function RootLayout({
               </div>
             </nav>
           </header>
-          <main className="md:col-span-2">{children}</main>
+          <main className="md:col-span-2 bg-ui-black">{children}</main>
         </div>
       </body>
     </html>
