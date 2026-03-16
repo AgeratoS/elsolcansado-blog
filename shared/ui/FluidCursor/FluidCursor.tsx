@@ -5,7 +5,7 @@ import { motion, useSpring, useMotionValue, useTransform } from "framer-motion";
 
 const springConfig = { damping: 25, stiffness: 200, mass: 0.5 };
 const INITIAL_SIZE = 12;
-const elementPadding = 4;
+const elementPadding = 0;
 
 export function FluidCursor() {
   const cursorRef = useRef<HTMLDivElement>(null);

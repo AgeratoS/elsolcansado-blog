@@ -1,5 +1,13 @@
-import type { GetPostsParams, PaginatedResponse, Post, PostListItem, WpPost } from "../model/types";
+import type {
+  GetPostsParams,
+  PaginatedResponse,
+  Post,
+  PostListItem,
+  PostListItemWithFeaturedMedia,
+  WpPost,
+} from "../model/types";
 import { mapWpPostToPost } from "../model/types";
+import { getMediaManyByIds } from "@/entities/media";
 
 const WP_API_BASE_URL = process.env.WP_API_BASE_URL;
 
@@ -56,7 +64,9 @@ const normalizeStatus = (status?: GetPostsParams["status"]): string | undefined 
   return status;
 };
 
-export const getPosts = async (params: GetPostsParams = {}): Promise<PaginatedResponse<PostListItem>> => {
+export const getPosts = async (
+  params: GetPostsParams = {},
+): Promise<PaginatedResponse<PostListItemWithFeaturedMedia>> => {
   const { page = 1, perPage = 10, ...rest } = params;
 
   const { data, headers } = await wpFetch<WpPost[]>("/posts", {
@@ -75,7 +85,7 @@ export const getPosts = async (params: GetPostsParams = {}): Promise<PaginatedRe
   const total = Number(headers.get("X-WP-Total") ?? 0);
   const totalPages = Number(headers.get("X-WP-TotalPages") ?? 0);
 
-  const items: PostListItem[] = data.map((raw) => {
+  const baseItems: PostListItem[] = data.map((raw) => {
     const post = mapWpPostToPost(raw);
 
     return {
@@ -92,6 +102,24 @@ export const getPosts = async (params: GetPostsParams = {}): Promise<PaginatedRe
       isSticky: post.isSticky,
     };
   });
+
+  const featuredIds = Array.from(
+    new Set(
+      baseItems
+        .map((p) => p.featuredMediaId)
+        .filter((id): id is number => typeof id === "number"),
+    ),
+  );
+
+  const medias = await getMediaManyByIds(featuredIds);
+  const mediaById = new Map(medias.map((m) => [m.id, m]));
+
+  const items: PostListItemWithFeaturedMedia[] = baseItems.map((item) => ({
+    ...item,
+    featuredMedia: item.featuredMediaId
+      ? mediaById.get(item.featuredMediaId) ?? null
+      : null,
+  }));
 
   return {
     items,

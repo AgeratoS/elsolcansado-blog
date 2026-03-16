@@ -28,7 +28,7 @@ export function HeroPostCollection({ posts }: HeroPostCollectionProps) {
             <div className="sticky top-0 h-screen">
                 {posts.map((post, index) => (
                     <ScrollCard key={post.id} scrollYProgress={scrollYProgress} index={index} total={posts.length}>
-                        <HeroPost post={post} />
+                        <HeroPost post={post} nextPost={posts[index + 1]} />
                     </ScrollCard>
                 ))}
             </div>

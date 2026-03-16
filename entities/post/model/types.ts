@@ -62,6 +62,8 @@ export interface WpPost {
  * Normalized domain model for a blog post inside the app.
  * Use this type across widgets/features instead of the raw WP structure.
  */
+import type { Media } from "@/entities/media";
+
 export interface Post {
   id: number;
   slug: string;
@@ -93,6 +95,15 @@ export interface PostListItem extends Pick<Post, "id" | "slug" | "url" | "title"
   categoryIds: number[];
   tagIds: number[];
   isSticky: boolean;
+}
+
+export interface PostWithFeaturedMedia extends Post {
+  featuredMedia?: Media | null;
+}
+
+export interface PostListItemWithFeaturedMedia
+  extends Omit<PostListItem, "featuredMediaId"> {
+  featuredMedia?: Media | null;
 }
 
 export type PostStatus = Post["status"];
