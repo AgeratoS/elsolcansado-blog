@@ -1,6 +1,11 @@
 import * as motion from "framer-motion/client";
+import {ReactNode} from "react";
 
-export function HeroPost() {
+interface HeroPostProps {
+    title?: ReactNode;
+}
+
+export function HeroPost(props: HeroPostProps) {
   return (
     <motion.div className="min-h-screen bg-ui-gray-50 relative">
       {/* Content block */}
@@ -40,8 +45,7 @@ export function HeroPost() {
         >
           <div className="md:max-w-full">
             <h3 className="text-ui-white text-5xl mb-3 md:mb-6 line-clamp-3 xl:text-7xl">
-              Монады без академии: как функциональные абстракции помогли мне
-              писать меньше багов
+                {props.title}
             </h3>
 
             <p className="text-ui-gray-300 mb-8 md:mb-12 xl:text-2xl">
