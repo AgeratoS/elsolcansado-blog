@@ -2,7 +2,6 @@
 "use client";
 
 import {motion, MotionValue, useTransform} from "framer-motion";
-import {match} from "ts-pattern";
 
 interface ScrollCardProps {
   children: React.ReactNode;
@@ -11,73 +10,51 @@ interface ScrollCardProps {
   total: number;
 }
 
-const useOpacity = (scrollYProgress: MotionValue<number>, index: number, total: number) => {
-    const start = index / total;
-    const end = (index + 1) / total;
+const useCardTransforms = (scrollYProgress: MotionValue<number>, index: number, total: number) => {
+    const safeTotal = Math.max(total, 1);
+    const segment = 1 / safeTotal;
 
-    const startOpacity = useTransform(
-        scrollYProgress,
-        [start, end],
-        [1, 0]
-    )
+    const start = segment * index;
+    const middle = start + segment / 2;
+    const end = start + segment;
 
-    const endOpacity = useTransform(
-        scrollYProgress,
-        [start, end],
-        [0, 1]
-    )
+    let inputRange: number[];
+    let opacityRange: number[];
 
-    const defaultOpacity = useTransform(
-        scrollYProgress,
-        [start, (start + end) / 2, end],
-        [0, 1, 0]
-    )
+    if (index === 0) {
+        // Первая карточка сразу видна и уходит после своего сегмента.
+        inputRange = [0, middle, end];
+        opacityRange = [1, 1, 0];
+    } else if (index === total - 1) {
+        // Последняя карточка появляется в своём сегменте и остаётся видимой до конца.
+        inputRange = [start, middle, 1];
+        opacityRange = [0, 1, 1];
+    } else {
+        // Промежуточные карточки: появляются и исчезают в пределах своего сегмента.
+        inputRange = [start, middle, end];
+        opacityRange = [0, 1, 0];
+    }
 
-    return match(index)
-        .with(0, () => startOpacity)
-        .with(total - 1, () => endOpacity)
-        .otherwise(() => defaultOpacity);
+    const opacity = useTransform(scrollYProgress, inputRange, opacityRange);
+    // Привязываем поворот к той же кривой, что и прозрачность:
+    // когда карточка полностью видима — она развернута к нам,
+    // когда исчезает — разворачивается на 90°.
+    const rotateY = useTransform(opacity, [0, 1], [90, 0]);
 
-}
-
-const useRotate = (scrollYProgress: MotionValue<number>, index: number, total: number) => {
-    const start = index / total;
-    const end = (index + 1) / total;
-
-    const startRotation = useTransform(
-        scrollYProgress,
-        [start, end],
-        [0, 90]
-    );
-
-    const endRotation = useTransform(
-        scrollYProgress,
-        [start, end],
-        [0, 0]
-    );
-
-    const defaultRotation = useTransform(
-        scrollYProgress,
-        [start, (start + end) / 2, end],
-        [0, 0, 90]
-    );
-
-    return match(index)
-        .with(0, () => startRotation)
-        .with(total - 1, () => endRotation)
-        .otherwise(() => defaultRotation);
-}
+    return { opacity, rotateY };
+};
 
 
 export function ScrollCard({ scrollYProgress, children, index, total }: ScrollCardProps) {
-    const currentOpacity = useOpacity(scrollYProgress, index, total);
-    const rotation = useRotate(scrollYProgress, index, total);
+    const { opacity, rotateY } = useCardTransforms(scrollYProgress, index, total);
+    const zIndex = total - index;
 
   return <motion.div
-      className="absolute origin-left"
+      className="absolute inset-0"
       style={{
-      opacity: currentOpacity,
-          rotateY: rotation,
+      opacity,
+          rotateY,
+          zIndex,
   }}>
       {children}
   </motion.div>;
