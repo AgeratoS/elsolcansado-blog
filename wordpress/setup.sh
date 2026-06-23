@@ -2,7 +2,7 @@
 set -e
 
 # Wait for database to be ready
-until wp db check --allow-root 2>/dev/null; do
+until wp db query "SELECT 1" --allow-root >/dev/null 2>&1; do
   echo "Waiting for database..."
   sleep 3
 done
@@ -39,11 +39,10 @@ fi
 echo "Activating Next.js Headless theme..."
 wp theme activate theme --allow-root || wp theme activate nextjs-headless --allow-root || true
 
-# Configure the plugin if NEXTJS_URL is set
-if [ -n "$NEXTJS_URL" ]; then
+# Configure the revalidation plugin (must match Next.js WORDPRESS_WEBHOOK_SECRET)
+if [ -n "$NEXTJS_URL" ] && [ -n "$WORDPRESS_WEBHOOK_SECRET" ]; then
   echo "Configuring Next.js Revalidation plugin..."
-  # Plugin expects: nextjs_url, webhook_secret, cooldown (no enable_notifications field)
-  wp option update next_revalidate_settings "{\"nextjs_url\":\"${NEXTJS_URL}\",\"webhook_secret\":\"${WORDPRESS_WEBHOOK_SECRET:-}\",\"cooldown\":2}" --format=json --allow-root
+  wp option update next_revalidation_settings "{\"next_url\":\"${NEXTJS_URL}\",\"webhook_secret\":\"${WORDPRESS_WEBHOOK_SECRET}\",\"revalidation_cooldown\":2}" --format=json --allow-root
   echo "Plugin configured with Next.js URL: $NEXTJS_URL"
 fi
 

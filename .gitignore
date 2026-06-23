@@ -27,8 +27,9 @@ yarn-error.log*
 
 # Ignore all env files
 .env*
-# But do not ignore .env.example
+# But do not ignore env templates
 !.env.example
+!.env.docker.example
 
 # vercel
 .vercel
