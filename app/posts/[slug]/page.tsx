@@ -1,8 +1,6 @@
 import { getPostBySlug, getAllPostSlugs } from "@/lib/wordpress";
 import { generateContentMetadata, stripHtml } from "@/lib/metadata";
 
-import { Section, Container, Article, Prose } from "@/components/craft";
-import { badgeVariants } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 import Link from "next/link";
@@ -55,53 +53,20 @@ export default async function Page({
   });
 
   return (
-    <Section>
-      <Container>
-        <Prose>
-          <h1>
-            <span
-                dangerouslySetInnerHTML={{ __html: post.title.rendered }}
-              ></span>
-          </h1>
-          <div className="flex justify-between items-center gap-4 text-sm mb-4">
-            <h5>
-              Published {date}
-              {author?.name && (
-                <>
-                  {" "}by{" "}
-                  <span>
-                    <a href={`/posts/?author=${author.id}`}>{author.name}</a>
-                  </span>
-                </>
-              )}
-            </h5>
+    <div>
+      <h1>{post.title.rendered}</h1>
+      <div>
+        <p>Published {date}</p>
+        {author?.name && (
+          <p>by {author.name}</p>
+        )}
 
-            {category && (
-              <Link
-                href={`/posts/?category=${category.id}`}
-                className={cn(
-                  badgeVariants({ variant: "outline" }),
-                  "no-underline!"
-                )}
-              >
-                {category.name}
-              </Link>
-            )}
-          </div>
-          {featuredMedia?.source_url && (
-            <div className="h-96 my-12 md:h-[500px] overflow-hidden flex items-center justify-center border rounded-lg bg-accent/25">
-              {/* eslint-disable-next-line */}
-              <img
-                className="w-full h-full object-cover"
-                src={featuredMedia.source_url}
-                alt={post.title.rendered}
-              />
-            </div>
-          )}
-        </Prose>
+        {category && (
+          <Link href={`/posts/?category=${category.id}`}>{category.name}</Link>
+        )}
+      </div>
 
-        <Article dangerouslySetInnerHTML={{ __html: post.content.rendered }} />
-      </Container>
-    </Section>
+      <div dangerouslySetInnerHTML={{ __html: post.content.rendered }} />
+    </div>
   );
 }

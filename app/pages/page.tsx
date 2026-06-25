@@ -1,5 +1,4 @@
 import { getAllPages } from "@/lib/wordpress";
-import { ArchiveList } from "@/components/archive-list";
 import type { Page as WPPage } from "@/lib/wordpress.d";
 import type { Metadata } from "next";
 
@@ -17,12 +16,13 @@ export default async function Page() {
   const pages = await getAllPages();
 
   return (
-    <ArchiveList<WPPage>
-      title="All Pages"
-      items={pages}
-      getItemHref={(p) => `/pages/${p.slug}`}
-      getItemLabel={(p) => p.title.rendered}
-      emptyMessage="No pages available yet."
-    />
+    <div>
+      {pages.map((page) => (
+        <div key={page.id}>
+          <p>{page.title.rendered}</p>
+          <div dangerouslySetInnerHTML={{ __html: page.content.rendered }} />
+        </div>
+      ))}
+    </div>
   );
 }

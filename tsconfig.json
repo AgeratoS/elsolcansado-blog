@@ -24,6 +24,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@frontend/*": [
+        "./frontend/*"
       ]
     },
     "target": "ES2017"
