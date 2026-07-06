@@ -42,3 +42,6 @@ next-env.d.ts
 .cursor
 .factory
 RAILWAY-SETUP.md
+
+*storybook.log
+storybook-static

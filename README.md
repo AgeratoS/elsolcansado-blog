@@ -1,407 +1,384 @@
-# Next WP
+# Elsolcansado Blog
 
-A modern headless WordPress starter built with Next.js 16, React 19, and TypeScript.
+Headless-блог на **Next.js 16** + **WordPress** (REST API). WordPress используется только как CMS: контент редактируется в админке, а публичный сайт отдаётся Next.js-приложением.
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/next-wp?referralCode=AJtQpy&utm_medium=integration&utm_source=template&utm_campaign=generic)
+## Суть проекта
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2F9d8dev%2Fnext-wp&env=WORDPRESS_URL,WORDPRESS_HOSTNAME,WORDPRESS_WEBHOOK_SECRET&envDescription=Add%20WordPress%20URL%20with%20Rest%20API%20enabled%20(ie.%20https%3A%2F%2Fwp.example.com)%2C%20the%20hostname%20for%20Image%20rendering%20in%20Next%20JS%20(ie.%20wp.example.com)%2C%20and%20a%20secret%20key%20for%20secure%20revalidation&project-name=next-wp&repository-name=next-wp&demo-title=Next%20JS%20and%20WordPress%20Starter&demo-url=https%3A%2F%2Fwp.9d8.dev)
+| Часть | Назначение |
+|-------|------------|
+| **Next.js** (`app/`, `frontend/`) | Публичный фронтенд: страницы, виджеты, UI-компоненты |
+| **WordPress** (`wordpress/`, Docker) | Хранение и редактирование записей, страниц, рубрик, тегов, комментариев |
+| **`lib/wordpress.ts`** | Единая точка доступа к WordPress REST API |
+| **Плагин `next-revalidate`** | Webhook для инвалидации кэша Next.js при изменении контента |
 
-![Next WP Screenshot](https://github.com/user-attachments/assets/8b268c36-eb0d-459f-b9f1-b5f129bd29bc)
+Фронтенд организован по слоям:
 
-> **[Live Demo](https://wp.9d8.dev)** | **[Video Tutorial](https://www.youtube.com/watch?v=JZc1-BcOvYw)** | **[Headless Theme (761)](https://github.com/9d8dev/761)**
->
-> Need a WooCommerce version? Try [next-woo](https://github.com/9d8dev/next-woo)
+```
+frontend/
+├── entities/     # Сущности (post, comment)
+├── widgets/      # Составные блоки (header, footer, featured-posts, post-detail)
+└── shared/       # UI-kit, конфиги, утилиты
+```
 
-## Table of Contents
+---
 
-- [Quick Start](#quick-start)
-- [Prerequisites](#prerequisites)
-- [Environment Variables](#environment-variables)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Deployment](#deployment)
-  - [Railway (Recommended)](#railway-recommended)
-  - [Vercel](#vercel)
-  - [Local Development](#local-development)
-- [WordPress API Functions](#wordpress-api-functions)
-- [Cache Revalidation](#cache-revalidation)
-- [Customization](#customization)
-- [Troubleshooting](#troubleshooting)
-- [Testing](#testing)
-- [Scripts](#scripts)
-- [Contributing](#contributing)
-- [License](#license)
-- [Credits](#credits)
+## Быстрый старт
 
-## Quick Start
+### 1. Next.js
 
 ```bash
-# Clone the repository
-git clone https://github.com/9d8dev/next-wp.git
-cd next-wp
-
-# Install dependencies
 pnpm install
-
-# Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your WordPress URL and credentials
-
-# Start development server
+# заполните .env.local (см. ниже)
 pnpm dev
 ```
 
-Your site is now running at `http://localhost:3000`.
+Сайт: `http://localhost:3000`
 
-## Prerequisites
-
-- **Node.js** 18.17 or later
-- **pnpm** 8.0 or later (recommended) or npm/yarn
-- **WordPress** site with REST API enabled (default in WordPress 4.7+)
-
-## Environment Variables
-
-Create a `.env.local` file in the root directory:
+### 2. WordPress (локальный стенд через Docker)
 
 ```bash
-WORDPRESS_URL="https://your-wordpress-site.com"    # Full WordPress URL
-WORDPRESS_HOSTNAME="your-wordpress-site.com"       # Domain for image optimization
-WORDPRESS_WEBHOOK_SECRET="your-secret-key-here"    # Secret for cache revalidation
+cp .env.docker.example .env.docker
+# заполните .env.docker
+docker compose up -d
 ```
 
-## Features
+WordPress: `http://localhost:8080` (порт задаётся в `WORDPRESS_PORT`)
 
-- **Type-safe WordPress API** - Full TypeScript support with comprehensive type definitions
-- **Server-side pagination** - Efficient handling of large content libraries
-- **Automatic cache revalidation** - WordPress plugin for instant updates
-- **Dynamic routes** - Posts, pages, authors, categories, and tags
-- **Search & filtering** - Real-time search with debouncing
-- **Dynamic sitemap** - Auto-generated XML sitemap
-- **OG image generation** - Dynamic social media cards
-- **Dark mode** - Built-in theme switching
-- **shadcn/ui components** - Beautiful, accessible UI components
-- **Responsive design** - Mobile-first with Tailwind CSS v4
+> При первом запуске WordPress устанавливается автоматически через WP-CLI (см. `wordpress/setup.sh`).
 
-## Project Structure
+### 3. Связать WordPress и Next.js
+
+В `.env.local`:
+
+```bash
+WORDPRESS_URL="http://localhost:8080"
+WORDPRESS_HOSTNAME="localhost"
+WORDPRESS_WEBHOOK_SECRET="..."   # тот же секрет, что в .env.docker
+```
+
+В `.env.docker`:
+
+```bash
+NEXTJS_URL=http://host.docker.internal:3000
+WORDPRESS_WEBHOOK_SECRET=...     # тот же секрет
+```
+
+---
+
+## Переменные окружения
+
+### Next.js (`.env.local`)
+
+| Переменная | Обязательна | Описание |
+|------------|-------------|----------|
+| `WORDPRESS_URL` | да | Полный URL WordPress, например `http://localhost:8080` |
+| `WORDPRESS_HOSTNAME` | да | Домен для `next/image` (без протокола) |
+| `WORDPRESS_WEBHOOK_SECRET` | для revalidation | Секрет webhook; должен совпадать с настройкой плагина |
+
+Сгенерировать секрет:
+
+```bash
+openssl rand -base64 32
+```
+
+### Docker / WordPress (`.env.docker`)
+
+См. `.env.docker.example` — учётные данные MySQL, админ WordPress, `NEXTJS_URL`, `WORDPRESS_WEBHOOK_SECRET`.
+
+---
+
+## WordPress на стенде: общий чек-лист
+
+Выполните один раз после развёртывания WordPress.
+
+### Базовая настройка
+
+- [ ] **Настройки → Постоянные ссылки** — любой вариант кроме «Простые» (нужен для REST API)
+- [ ] Проверить REST API: `{WORDPRESS_URL}/wp-json/wp/v2/posts` возвращает JSON
+- [ ] Установлена и активирована **headless-тема** (`nextjs-headless`) — входит в Docker-образ; редиректит публичный фронт WordPress на Next.js
+- [ ] Установлен и активирован плагин **`next-revalidate`** — входит в `plugin/next-revalidate`, монтируется в Docker
+
+### Плагин next-revalidate
+
+- [ ] **Настройки → Next.js Revalidation**
+- [ ] **Next.js URL** — URL фронтенда (локально: `http://host.docker.internal:3000`)
+- [ ] **Webhook Secret** — совпадает с `WORDPRESS_WEBHOOK_SECRET` в `.env.local`
+- [ ] Тест: опубликовать/изменить запись → изменения появляются на фронте после revalidation
+
+### Контент для разработки
+
+- [ ] Создать несколько записей с **миниатюрой** (Featured Image)
+- [ ] Назначить **рубрики** и **теги**
+- [ ] Заполнить **профиль автора** (Имя, Биография) — **Пользователи → Профиль**
+- [ ] Убедиться, что записи в статусе **Опубликовано**
+
+---
+
+## Фичи и настройки WordPress
+
+> **Правило для разработки:** каждая новая фича, требующая плагин, настройку или переменную окружения в WordPress, **обязательно** документируется в этом разделе.
+
+### Главная страница — сетка «Избранное»
+
+| | |
+|---|---|
+| **Маршрут** | `/` |
+| **Код** | `app/page.tsx`, `frontend/widgets/featured-posts/` |
+| **Данные** | Последние 5 записей через `getPostsPaginated(1, 5)` |
+| **WordPress** | Опубликованные записи с `_embed` (миниатюра, рубрика) |
+
+**Чек-лист WordPress:**
+
+- [ ] Есть хотя бы одна опубликованная запись
+- [ ] У записей задана миниатюра (необязательно, но рекомендуется)
+
+---
+
+### Страница записи
+
+| | |
+|---|---|
+| **Маршрут** | `/posts/[slug]` |
+| **Код** | `app/posts/[slug]/page.tsx`, `frontend/widgets/post-detail/` |
+
+**Чек-лист WordPress:**
+
+- [ ] Запись опубликована
+- [ ] Миниатюра задана (для hero-изображения)
+- [ ] Рубрика назначена (для хлебных крошек и бейджа)
+- [ ] Теги назначены (для блока тегов внизу статьи)
+- [ ] Биография автора заполнена (для сайдбара «О авторе»)
+
+---
+
+### Хлебные крошки
+
+| | |
+|---|---|
+| **Код** | `frontend/shared/ui/breadcrumbs.tsx` |
+| **Цепочка** | Главная → Статьи → {Рубрика} |
+| **WordPress** | У записи должна быть назначена рубрика |
+
+**Чек-лист WordPress:**
+
+- [ ] У записи есть хотя бы одна рубрика
+
+---
+
+### Сайдбар «Последние посты»
+
+| | |
+|---|---|
+| **Код** | `frontend/widgets/post-detail/post-sidebar.tsx`, `frontend/entities/post/ui/recent-post-item.tsx` |
+| **Данные** | 4 последние записи, кроме текущей |
+
+**Чек-лист WordPress:**
+
+- [ ] Несколько опубликованных записей (для наполнения блока)
+
+---
+
+### Комментарии
+
+| | |
+|---|---|
+| **Код** | `frontend/entities/comment/`, `app/api/comments/route.ts` |
+| **API** | `GET/POST /api/comments` → WordPress `/wp-json/wp/v2/comments` |
+| **WordPress** | Плагин `next-revalidate` или тема `nextjs-headless` включают фильтр `rest_allow_anonymous_comments` |
+
+> **Важно:** настройки **Настройки → Обсуждение** и флаг «Разрешить комментарии» у записи **недостаточны** для headless-сайта. WordPress REST API по умолчанию **запрещает** анонимное создание комментариев (ошибка `rest_comment_login_required`: «необходимо авторизоваться»), даже если в админке гостевые комментарии разрешены. Фильтр `rest_allow_anonymous_comments` уже добавлен в `plugin/next-revalidate` и `wordpress/theme/functions.php`.
+
+**Чек-лист WordPress:**
+
+- [ ] Плагин `next-revalidate` **активен** (фильтр REST API подключается через него)
+- [ ] **Настройки → Обсуждение** → включить «Разрешить оставлять комментарии к новым записям»
+- [ ] Для гостевых комментариев: **снять** «Пользователи должны быть зарегистрированы и авторизованы, чтобы оставлять комментарии»
+- [ ] При необходимости модерации: «Комментарий должен быть одобрен вручную» — комментарий уйдёт в очередь, на фронте покажется сообщение «отправлен на модерацию»
+- [ ] У конкретной записи: **Обсуждение → Разрешить комментарии** (не «Закрыто»)
+
+**Поля формы на фронте:** имя, email, текст (требования WordPress REST API для гостей).
+
+**Если после обновления кода ошибка остаётся:** перезапустите контейнер WordPress (`docker compose restart wordpress`) или деактивируйте/активируйте плагин `next-revalidate` в админке.
+
+---
+
+### Счётчик просмотров
+
+| | |
+|---|---|
+| **Код** | `frontend/entities/post/lib/get-post-view-count.ts` |
+| **Статус** | Опционально. В WordPress **нет** встроенного счётчика просмотров |
+
+Блок на странице записи появляется только если плагин отдаёт значение в `post.meta` по одному из ключей:
+
+- `post_views_count`
+- `views`
+- `jetpack-post-views`
+- `_post_views`
+- `pvc_post_views`
+
+**Чек-лист WordPress (если нужны просмотры):**
+
+- [ ] Установить плагин счётчика (например, Post Views Counter, Jetpack Stats)
+- [ ] Убедиться, что meta-поле доступно в REST API (`register_post_meta` с `show_in_rest: true` — часто требует доработки темы/плагина)
+- [ ] Проверить ответ API: `{WORDPRESS_URL}/wp-json/wp/v2/posts?slug=...` — в объекте `meta` есть значение просмотров
+
+Если плагин не установлен — блок просмотров **не отображается** (штатное поведение).
+
+---
+
+### Кэш и revalidation
+
+| | |
+|---|---|
+| **Код** | `app/api/revalidate/route.ts`, `plugin/next-revalidate/` |
+| **Кэш** | 1 час (`revalidate: 3600`), теги `wordpress`, `posts`, `comments` и др. |
+
+**Чек-лист WordPress:**
+
+- [ ] Плагин `next-revalidate` активен и настроен (см. общий чек-лист)
+- [ ] `WORDPRESS_WEBHOOK_SECRET` совпадает в WordPress и Next.js
+
+---
+
+### Изображения
+
+| | |
+|---|---|
+| **Код** | `next.config.ts` → `images.remotePatterns` |
+
+**Чек-лист:**
+
+- [ ] `WORDPRESS_HOSTNAME` в `.env.local` совпадает с доменом медиафайлов WordPress
+- [ ] Медиа загружены через WordPress (не hotlink с заблокированных доменов)
+
+---
+
+### Архивы, поиск, страницы
+
+| Маршрут | Статус |
+|---------|--------|
+| `/posts` | Список записей с фильтрами |
+| `/posts/categories`, `/posts/tags`, `/posts/authors` | Архивы |
+| `/pages`, `/pages/[slug]` | Статические страницы WordPress |
+
+Специальных плагинов не требуют. Нужны опубликованные записи/страницы и REST API.
+
+---
+
+## Команды
+
+```bash
+pnpm dev              # Dev-сервер Next.js (turbo)
+pnpm build            # Production-сборка
+pnpm start            # Production-сервер
+pnpm lint             # ESLint
+pnpm test             # Vitest
+pnpm test:watch       # Vitest в watch-режиме
+pnpm storybook        # Storybook (компоненты UI)
+pnpm build-storybook  # Сборка Storybook
+```
+
+```bash
+docker compose up -d       # Запуск WordPress + MySQL
+docker compose down        # Остановка
+docker compose logs -f wordpress
+```
+
+---
+
+## Структура репозитория
 
 ```
-next-wp/
-├── __tests__/                # Vitest test suite
-│   ├── api/                 # API route tests
-│   └── lib/                 # Library tests
-├── app/                      # Next.js App Router
-│   ├── api/
-│   │   ├── og/              # OG image generation
-│   │   └── revalidate/      # Cache revalidation webhook
-│   ├── pages/[slug]/        # Dynamic WordPress pages
-│   ├── posts/
-│   │   ├── [slug]/          # Individual post pages
-│   │   ├── authors/         # Author archive
-│   │   ├── categories/      # Category archive
-│   │   └── tags/            # Tag archive
-│   ├── layout.tsx           # Root layout
-│   ├── page.tsx             # Homepage
-│   └── sitemap.ts           # Dynamic sitemap
-├── components/
-│   ├── posts/               # Post-related components
-│   │   ├── post-card.tsx    # Post card component
-│   │   ├── filter.tsx       # Filter controls
-│   │   └── search-input.tsx # Search component
-│   ├── nav/                 # Navigation components
-│   ├── theme/               # Theme toggle
-│   └── ui/                  # shadcn/ui components
+├── app/                        # Next.js App Router
+│   ├── page.tsx                # Главная (сетка избранных записей)
+│   ├── posts/[slug]/           # Страница записи
+│   ├── posts/                  # Архив записей
+│   ├── pages/                  # WordPress-страницы
+│   └── api/
+│       ├── comments/           # Прокси комментариев в WordPress
+│       ├── revalidate/         # Webhook от WordPress
+│       └── og/                 # OG-изображения
+├── frontend/
+│   ├── entities/post/          # Карточка, мета, просмотры
+│   ├── entities/comment/       # Комментарии
+│   ├── widgets/                # Header, Footer, FeaturedPosts, PostDetail
+│   └── shared/                 # UI-kit, menu, утилиты
 ├── lib/
-│   ├── wordpress.ts         # WordPress API functions
-│   └── wordpress.d.ts       # TypeScript definitions
-├── plugin/                  # WordPress revalidation plugin
-├── menu.config.ts           # Navigation configuration
-├── site.config.ts           # Site metadata
-└── vitest.config.ts         # Test configuration
+│   ├── wordpress.ts            # WordPress REST API
+│   └── wordpress.d.ts          # Типы
+├── plugin/next-revalidate/     # Плагин revalidation для WordPress
+├── wordpress/                  # Docker-образ и headless-тема
+├── site.config.ts              # Название и описание сайта
+└── docker-compose.yml
 ```
 
-## Deployment
+---
 
-### Railway (Recommended)
+## Конфигурация сайта
 
-Railway deploys the complete stack with one click: MySQL + WordPress + Next.js.
-
-![CleanShot 2025-11-26 at 23 39 02@2x](https://github.com/user-attachments/assets/388427e2-72c4-4caf-8bfd-d86c981b0bb2)
-
-#### What's Included
-
-The Railway template uses a custom WordPress Docker image (`ghcr.io/9d8dev/next-wp-wordpress`) with:
-
-- **next-revalidate plugin** - Pre-installed and auto-activated for cache revalidation
-- **nextjs-headless theme** - Redirects WordPress frontend to your Next.js site
-- **WP-CLI** - Automated WordPress setup
-- **MySQL 8.0** - Database with persistent volume
-- **Next.js** - Your frontend application
-
-```
-┌─────────┐     ┌───────────┐     ┌─────────┐
-│  MySQL  │────▶│ WordPress │◀────│ Next.js │
-│   DB    │     │   (CMS)   │     │(Frontend)│
-└─────────┘     └───────────┘     └─────────┘
-```
-
-#### Deployment
-
-1. Click the **Deploy on Railway** button above
-2. Wait for all 3 services to deploy (MySQL, WordPress, Next.js)
-3. Note the WordPress and Next.js public URLs from the Railway dashboard
-
-#### Post-Deployment Setup
-
-**1. Complete WordPress Installation**
-
-1. Visit your WordPress URL (e.g., `https://wordpress-xxx.up.railway.app`)
-2. Complete the installation wizard:
-   - Site Title
-   - Admin Username
-   - Admin Password
-   - Admin Email
-3. Click "Install WordPress"
-
-**2. Configure the Revalidation Plugin**
-
-The `next-revalidate` plugin is pre-installed and activated.
-
-1. Go to WordPress Admin → **Settings** → **Next.js Revalidation**
-2. Enter your **Next.js URL** (e.g., `https://next-wp-xxx.up.railway.app`)
-3. Enter the **Webhook Secret**:
-   - In Railway, go to your Next.js service → Variables
-   - Copy the `WORDPRESS_WEBHOOK_SECRET` value
-   - Paste it in the plugin settings
-4. Click **Save**
-
-**3. Test the Setup**
-
-1. Create a test post in WordPress and publish it
-2. Visit your Next.js site - the post should appear
-3. Edit the post in WordPress
-4. Refresh the Next.js site - changes should appear (revalidation working)
-
-#### Customizing the Next.js Code
-
-By default, the template deploys from the `9d8dev/next-wp` repository. To customize:
-
-1. In Railway, click on the **Next.js service**
-2. Go to **Settings** → **Source** → **Upstream Repo**
-3. Click **"Eject"**
-4. Select your GitHub account/organization
-5. Click **"Eject service"**
-
-![CleanShot 2025-11-27 at 00 01 29@2x](https://github.com/user-attachments/assets/9e89bcc6-fcb8-412b-9611-f2ee85081ccb)
-
-Railway creates a copy of the repository in your GitHub. You can then:
-- Clone the repo locally
-- Make customizations (styling, components, pages)
-- Push changes → Railway auto-deploys
-
-### Vercel
-
-1. Click the **Deploy with Vercel** button above
-2. Fill in environment variables:
-   - `WORDPRESS_URL` - Your existing WordPress site URL
-   - `WORDPRESS_HOSTNAME` - WordPress domain (for images)
-   - `WORDPRESS_WEBHOOK_SECRET` - Generate a secure random string
-3. Deploy and wait for build to complete
-4. Install the revalidation plugin on your WordPress site
-5. Configure the plugin with your Vercel deployment URL
-
-### Local Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Copy environment template
-cp .env.example .env.local
-
-# Configure your WordPress connection in .env.local
-# Then start the dev server
-pnpm dev
-```
-
-**Required:** Your WordPress site must have the REST API enabled (default since WP 4.7).
-
-## WordPress API Functions
-
-All WordPress interactions are centralized in `lib/wordpress.ts`:
-
-### Posts
-```typescript
-getRecentPosts(filters?)                    // Recent posts (max 100)
-getPostsPaginated(page, perPage, filters?)  // Paginated posts with headers
-getPostBySlug(slug)                         // Single post by slug (with _embed)
-getPostById(id)                             // Single post by ID
-getAllPostSlugs()                            // All slugs (for static generation)
-getAllPostsForSitemap()                      // All slugs + modified dates
-```
-
-### Taxonomies
-```typescript
-getAllCategories()                           // All categories
-getCategoryById(id)                         // Category by ID
-getCategoryBySlug(slug)                     // Category by slug
-getAllTags()                                // All tags
-getTagById(id)                              // Tag by ID
-getTagBySlug(slug)                          // Tag by slug
-getPostsByCategory(id)                      // Posts in category
-getPostsByTag(id)                           // Posts with tag
-getTagsByPost(postId)                       // Tags on a post
-```
-
-### Authors & Pages
-```typescript
-getAllAuthors()                              // All authors
-getAuthorById(id)                           // Author by ID
-getAuthorBySlug(slug)                       // Author by slug
-getPostsByAuthor(id)                        // Posts by author
-getAllPages()                               // All pages
-getPageById(id)                             // Page by ID
-getPageBySlug(slug)                         // Page by slug
-```
-
-### Paginated Queries
-```typescript
-getPostsByCategoryPaginated(categoryId, page, perPage)
-getPostsByTagPaginated(tagId, page, perPage)
-getPostsByAuthorPaginated(authorId, page, perPage)
-```
-
-### Search
-```typescript
-searchCategories(query)                     // Search categories
-searchTags(query)                           // Search tags
-searchAuthors(query)                        // Search authors
-```
-
-### Example Usage
-```typescript
-import { getPostsPaginated } from "@/lib/wordpress";
-
-const { data: posts, headers } = await getPostsPaginated(1, 9, {
-  category: "news",
-  search: "nextjs"
-});
-
-console.log(`Found ${headers.total} posts across ${headers.totalPages} pages`);
-```
-
-## Cache Revalidation
-
-The starter uses Next.js cache tags for efficient revalidation:
-
-1. **Install the plugin** - Download [next-revalidate.zip](https://github.com/9d8dev/next-wp/releases/latest/download/next-revalidate.zip) and upload to WordPress
-2. **Configure** - Go to Settings > Next.js Revalidation
-3. **Set URL** - Enter your Next.js site URL
-4. **Set secret** - Use the same `WORDPRESS_WEBHOOK_SECRET` value
-
-When content changes in WordPress, only affected pages are revalidated.
-
-> **Note:** If using the Railway template, the plugin is pre-installed automatically.
-
-## Customization
-
-### Site Configuration
-
-Edit `site.config.ts` for site metadata:
+**Метаданные** — `site.config.ts`:
 
 ```typescript
 export const siteConfig = {
-  site_name: "Your Site",
-  site_domain: "yourdomain.com",
-  site_description: "Your site description"
+  site_name: "Elsolcansado Blog",
+  site_description: "Сайт одного разработчика",
+  site_domain: "https://your-domain.com",
 };
 ```
 
-### Navigation
+**Навигация** — `frontend/shared/config/menu.ts`
 
-Edit `menu.config.ts` for navigation links:
+---
 
-```typescript
-export const mainMenu = {
-  home: "/",
-  blog: "/posts",
-  // Add more links...
-};
+## Устранение неполадок
 
-export const contentMenu = {
-  categories: "/posts/categories",
-  tags: "/posts/tags",
-  authors: "/posts/authors",
-};
-```
+### REST API недоступен
 
-### Theming
+- Проверить `WORDPRESS_URL` в `.env.local`
+- **Настройки → Постоянные ссылки** — не «Простые»
+- Открыть `{WORDPRESS_URL}/wp-json/wp/v2/posts`
 
-This project uses shadcn/ui with Tailwind CSS. Customize colors in your CSS or update the shadcn theme.
+### Записи не появляются на фронте
 
-## Troubleshooting
+- Записи в статусе «Опубликовано»
+- Проверить логи Next.js — при недоступном WordPress используется graceful fallback (пустые данные)
+- Проверить revalidation (плагин и секрет)
 
-### REST API not accessible
-- Ensure your WordPress site is publicly accessible
-- Check that permalinks are set (Settings > Permalinks)
-- Verify REST API at `your-site.com/wp-json/wp/v2/posts`
+### Изображения не грузятся
 
-### Images not loading
-- Add your WordPress domain to `WORDPRESS_HOSTNAME`
-- Check `next.config.ts` has the correct `remotePatterns`
+- Проверить `WORDPRESS_HOSTNAME`
+- Домен медиа должен совпадать с `remotePatterns` в `next.config.ts`
 
-### Revalidation not working
-- Verify `WORDPRESS_WEBHOOK_SECRET` matches in both WordPress and Next.js
-- Check the plugin is activated in WordPress
-- Test the webhook endpoint at `/api/revalidate`
+### Комментарии не отправляются
 
-### CORS errors
-- Install a CORS plugin on WordPress, or
-- Configure your server to allow requests from your Next.js domain
+- Проверить настройки обсуждения (см. раздел «Комментарии»)
+- У записи не закрыты комментарии
+- **Частая причина:** REST API WordPress блокирует гостевые комментарии по умолчанию. Убедитесь, что активен плагин `next-revalidate` (в нём включён `rest_allow_anonymous_comments`)
+- Ответ API: `POST /api/comments` — код `rest_comment_login_required` означает, что фильтр не подключён
+- Некоторые хостинги блокируют анонимные POST в REST API — проверить на стенде
 
-## Testing
+### Revalidation не срабатывает
 
-The project uses [Vitest](https://vitest.dev/) for unit testing.
+- `WORDPRESS_WEBHOOK_SECRET` совпадает в WordPress и Next.js
+- `NEXTJS_URL` доступен **из контейнера WordPress** (локально: `host.docker.internal:3000`)
+- Плагин активен: **Настройки → Next.js Revalidation**
+
+---
+
+## Тестирование
 
 ```bash
-pnpm test          # Run all tests
-pnpm test:watch    # Run in watch mode
+pnpm test
 ```
 
-Tests cover the core modules:
+Покрытие: `lib/utils`, `lib/metadata`, `lib/wordpress`, `api/revalidate`.
 
-| Module | What's tested |
-|---|---|
-| `lib/utils` | `cn()` class merging with Tailwind deduplication |
-| `lib/metadata` | `stripHtml`, `truncateHtml`, OG/Twitter metadata generation |
-| `lib/wordpress` | API fetch layer, pagination, error handling, graceful fallbacks |
-| `api/revalidate` | Webhook secret validation, content type routing, cache revalidation |
+UI-компоненты — в Storybook: `pnpm storybook`.
 
-## Scripts
+---
 
-```bash
-pnpm dev       # Start development server
-pnpm build     # Build for production
-pnpm start     # Start production server
-pnpm lint      # Run ESLint
-pnpm test      # Run tests
-```
+## Лицензия
 
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Credits
-
-Built with [Next.js](https://nextjs.org/), [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/), and [brijr/craft](https://craft-ds.com).
-
-Created by [Bridger Tower](https://twitter.com/bridgertower) and [Cameron Youngblood](https://twitter.com/youngbloodcyb) at [9d8](https://9d8.dev).
+MIT — см. [LICENSE](LICENSE).

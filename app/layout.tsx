@@ -1,14 +1,14 @@
 import "./globals.css";
 
 import { Inter as FontSans } from "next/font/google";
-import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
 
+import { ThemeProvider } from "@/frontend/shared/providers/theme-provider";
+import { Header, Footer } from "@/frontend/widgets";
 import { siteConfig } from "@/site.config";
 import { cn } from "@/lib/utils";
 
 import type { Metadata } from "next";
-import { Header, Footer } from "@/frontend/widgets";
 
 const font = FontSans({
   subsets: ["latin"],
@@ -33,13 +33,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body className={cn("min-h-screen font-sans antialiased flex flex-col", font.variable)}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+      <body
+        className={cn(
+          "flex min-h-screen flex-col bg-background font-sans text-foreground antialiased",
+          font.variable,
+        )}
+      >
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Header />
           {children}
           <Footer />

@@ -1,2 +1,2 @@
-export { Hero } from './hero';
-export { Card } from './card';
+export { CardPost } from './card';
+export { RecentPostItem } from './recent-post-item';

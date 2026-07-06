@@ -144,6 +144,29 @@ export interface PostEmbedded {
   "wp:term"?: EmbeddedTerm[][];
 }
 
+export interface Comment {
+  id: number;
+  post: number;
+  parent: number;
+  author: number;
+  author_name: string;
+  author_url: string;
+  date: string;
+  date_gmt: string;
+  content: RenderedContent;
+  status: "approved" | "hold" | "spam" | "trash";
+  type: string;
+  author_avatar_urls?: Record<string, string>;
+}
+
+export interface CreateCommentInput {
+  postId: number;
+  content: string;
+  authorName: string;
+  authorEmail: string;
+  parent?: number;
+}
+
 // Block types
 interface BlockSupports {
   align?: boolean | string[];

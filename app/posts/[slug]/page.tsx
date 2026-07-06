@@ -1,11 +1,16 @@
-import { getPostBySlug, getAllPostSlugs } from "@/lib/wordpress";
+import { PostDetailView } from "@/frontend/widgets/post-detail";
+import {
+  getAuthorByIdGraceful,
+  getCommentsByPost,
+  getPostBySlug,
+  getAllPostSlugs,
+  getRecentPostsExcluding,
+} from "@/lib/wordpress";
 import { generateContentMetadata, stripHtml } from "@/lib/metadata";
 
-import { cn } from "@/lib/utils";
-
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import type { Author } from "@/lib/wordpress.d";
 
 export async function generateStaticParams() {
   return await getAllPostSlugs();
@@ -31,6 +36,8 @@ export async function generateMetadata({
   });
 }
 
+export const revalidate = 3600;
+
 export default async function Page({
   params,
 }: {
@@ -43,30 +50,31 @@ export default async function Page({
     notFound();
   }
 
-  const author = post._embedded?.author?.[0];
-  const featuredMedia = post._embedded?.["wp:featuredmedia"]?.[0];
-  const category = post._embedded?.["wp:term"]?.[0]?.[0];
-  const date = new Date(post.date).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const embeddedAuthor = post._embedded?.author?.[0];
+  const authorFallback: Author = {
+    id: post.author,
+    name: embeddedAuthor?.name ?? "Автор",
+    slug: embeddedAuthor?.slug ?? "",
+    description: "",
+    url: "",
+    link: "",
+    avatar_urls: embeddedAuthor?.avatar_urls ?? {},
+    meta: {},
+  };
+
+  const [author, recentPosts, commentsResponse] = await Promise.all([
+    getAuthorByIdGraceful(post.author, authorFallback),
+    getRecentPostsExcluding(post.id, 4),
+    getCommentsByPost(post.id, 1, 10),
+  ]);
 
   return (
-    <div>
-      <h1>{post.title.rendered}</h1>
-      <div>
-        <p>Published {date}</p>
-        {author?.name && (
-          <p>by {author.name}</p>
-        )}
-
-        {category && (
-          <Link href={`/posts/?category=${category.id}`}>{category.name}</Link>
-        )}
-      </div>
-
-      <div dangerouslySetInnerHTML={{ __html: post.content.rendered }} />
-    </div>
+    <PostDetailView
+      post={post}
+      author={author}
+      recentPosts={recentPosts}
+      comments={commentsResponse.data}
+      totalComments={commentsResponse.headers.total}
+    />
   );
 }

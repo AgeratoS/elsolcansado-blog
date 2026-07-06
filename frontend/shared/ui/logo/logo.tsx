@@ -1,8 +1,13 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
-export function Logo() {
+type LogoProps = {
+    className?: string;
+};
+
+export function Logo({ className }: LogoProps) {
     return (
-        <Link href="/" className="font-bold">
+        <Link href="/" className={cn("font-bold", className)}>
             Журнал
         </Link>
     )

@@ -10,6 +10,8 @@ import type {
   Page,
   Author,
   FeaturedMedia,
+  Comment,
+  CreateCommentInput,
 } from "./wordpress.d";
 
 // Single source of truth for WordPress configuration
@@ -317,6 +319,18 @@ export async function getAuthorById(id: number): Promise<Author> {
   return wordpressFetch<Author>(`/wp-json/wp/v2/users/${id}`);
 }
 
+export async function getAuthorByIdGraceful(
+  id: number,
+  fallback: Author,
+): Promise<Author> {
+  return wordpressFetchGraceful<Author>(
+    `/wp-json/wp/v2/users/${id}`,
+    fallback,
+    undefined,
+    ["wordpress", "authors", `author-${id}`],
+  );
+}
+
 export async function getAuthorBySlug(slug: string): Promise<Author> {
   return wordpressFetch<Author[]>("/wp-json/wp/v2/users", { slug }).then(
     (users) => users[0]
@@ -475,6 +489,71 @@ export async function getPostsByAuthorPaginated(
     page,
     author: authorId,
   });
+}
+
+export async function getRecentPostsExcluding(
+  excludePostId: number,
+  limit: number = 4,
+): Promise<Post[]> {
+  const { data: posts } = await getPostsPaginated(1, limit + 1);
+  return posts.filter((post) => post.id !== excludePostId).slice(0, limit);
+}
+
+export async function getCommentsByPost(
+  postId: number,
+  page: number = 1,
+  perPage: number = 10,
+): Promise<WordPressResponse<Comment[]>> {
+  return wordpressFetchPaginatedGraceful<Comment>(
+    "/wp-json/wp/v2/comments",
+    {
+      post: postId,
+      page,
+      per_page: perPage,
+      orderby: "date",
+      order: "asc",
+    },
+    ["wordpress", "comments", `comments-post-${postId}`],
+  );
+}
+
+export async function createComment(
+  input: CreateCommentInput,
+): Promise<Comment> {
+  if (!baseUrl) {
+    throw new Error("WordPress URL not configured");
+  }
+
+  const body: Record<string, unknown> = {
+    post: input.postId,
+    content: input.content,
+    author_name: input.authorName,
+    author_email: input.authorEmail,
+  };
+
+  if (input.parent) {
+    body.parent = input.parent;
+  }
+
+  const url = `${baseUrl}/wp-json/wp/v2/comments`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message =
+      errorBody?.message ||
+      `WordPress comment creation failed: ${response.statusText}`;
+    throw new WordPressAPIError(message, response.status, url);
+  }
+
+  return response.json();
 }
 
 export { WordPressAPIError };

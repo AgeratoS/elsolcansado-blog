@@ -70,3 +70,7 @@ add_action('after_setup_theme', function () {
     // Remove WordPress version
     remove_action('wp_head', 'wp_generator');
 });
+
+// Headless: разрешить гостевые комментарии через REST API.
+// Настройки «Обсуждение» в админке на REST API не влияют — нужен отдельный фильтр.
+add_filter('rest_allow_anonymous_comments', '__return_true');

@@ -12,6 +12,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Headless: разрешить гостевые комментарии через REST API для Next.js фронтенда.
+// Без этого фильтра WP возвращает rest_comment_login_required, даже если в
+// «Настройки → Обсуждение» снята галочка «нужна авторизация».
+add_filter('rest_allow_anonymous_comments', '__return_true');
+
 class Next_Revalidation {
     private $options;
     private $option_name = 'next_revalidation_settings';
