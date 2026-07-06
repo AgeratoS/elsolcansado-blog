@@ -1,4 +1,9 @@
-import { FeaturedPostsSection } from "@/frontend/widgets";
+import {
+    FeaturedPostsSection,
+    HeroSection,
+    MAX_TICKER_POSTS,
+    PostsTicker,
+} from "@/frontend/widgets";
 import { getPostsPaginated } from "@/lib/wordpress";
 import { siteConfig } from "@/site.config";
 
@@ -12,10 +17,12 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function Page() {
-    const { data: posts } = await getPostsPaginated(1, 5);
+    const { data: posts, headers } = await getPostsPaginated(1, MAX_TICKER_POSTS);
 
     return (
         <main className="flex-1">
+            <HeroSection postCount={headers.total} />
+            <PostsTicker posts={posts} />
             <FeaturedPostsSection posts={posts} />
         </main>
     );
