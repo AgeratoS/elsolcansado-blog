@@ -1,8 +1,13 @@
+import { getMainNavigation } from "@/lib/navigation";
+
 import { getFooterCategories } from "./lib/get-footer-categories";
 import { FooterView } from "./footer-view";
 
 export async function Footer() {
-  const categories = await getFooterCategories();
+  const [navItems, categories] = await Promise.all([
+    getMainNavigation(),
+    getFooterCategories(),
+  ]);
 
-  return <FooterView categories={categories} />;
+  return <FooterView navItems={navItems} categories={categories} />;
 }

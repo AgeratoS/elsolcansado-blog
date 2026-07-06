@@ -176,3 +176,26 @@
         @apply bg-background text-foreground;
     }
 }
+
+@layer components {
+    /* Reset WordPress block layout padding so CMS pages align with site container */
+    .cms-content :where(
+        .wp-block-group,
+        .wp-block-columns,
+        .wp-block-column,
+        .entry-content,
+        .is-layout-flow,
+        .is-layout-constrained,
+        .has-global-padding
+    ) {
+        max-width: none;
+        padding-inline: 0;
+        margin-inline: 0;
+    }
+
+    .cms-content :where(.alignwide, .alignfull) {
+        max-width: none;
+        width: 100%;
+        margin-inline: 0;
+    }
+}

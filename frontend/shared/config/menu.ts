@@ -4,25 +4,25 @@ export type NavItem = {
   href: string;
 };
 
-export const mainMenu: NavItem[] = [
+/** Static app routes always shown before CMS pages in navigation. */
+export const coreNavItems: NavItem[] = [
   {
+    id: "home",
     label: "Главная",
     href: "/",
-    id: "home",
   },
   {
+    id: "posts",
     label: "Статьи",
     href: "/posts",
-    id: "posts",
   },
+];
+
+export const mockNavItems: NavItem[] = [
+  ...coreNavItems,
   {
-    label: "О нас",
-    href: "/about",
-    id: "about",
-  },
-  {
-    label: "Контакты",
-    href: "/contacts",
-    id: "contacts",
+    id: "42",
+    label: "Обо мне",
+    href: "/about-me",
   },
 ];

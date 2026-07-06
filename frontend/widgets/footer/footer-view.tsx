@@ -1,4 +1,4 @@
-import { mainMenu } from "@/frontend/shared/config/menu";
+import type { NavItem } from "@/frontend/shared/config/menu";
 import { Logo } from "@/frontend/shared/ui/logo";
 import Link from "next/link";
 
@@ -6,10 +6,11 @@ import { FooterLinkList } from "./footer-link-list";
 import type { FooterCategory } from "./model/types";
 
 type FooterViewProps = {
+  navItems: NavItem[];
   categories: FooterCategory[];
 };
 
-export function FooterView({ categories }: FooterViewProps) {
+export function FooterView({ navItems, categories }: FooterViewProps) {
   const year = new Date().getFullYear();
 
   return (
@@ -24,7 +25,7 @@ export function FooterView({ categories }: FooterViewProps) {
           </div>
 
           <nav className="flex flex-col gap-12 sm:flex-row sm:gap-24">
-            <FooterLinkList title="Навигация" items={mainMenu} />
+            <FooterLinkList title="Навигация" items={navItems} />
             <FooterLinkList
               title="Категории"
               items={categories.map((category) => ({

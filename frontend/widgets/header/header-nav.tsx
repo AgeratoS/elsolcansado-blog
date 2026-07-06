@@ -1,20 +1,21 @@
 "use client";
 
-import { mainMenu } from "@/frontend/shared/config/menu";
+import type { NavItem } from "@/frontend/shared/config/menu";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 import { isNavItemActive } from "./lib/is-nav-active";
 
 type HeaderNavProps = {
+  navItems: NavItem[];
   activePath: string;
 };
 
-export function HeaderNav({ activePath }: HeaderNavProps) {
+export function HeaderNav({ navItems, activePath }: HeaderNavProps) {
   return (
     <nav aria-label="Основная навигация">
       <ul className="hidden items-center gap-10 md:flex">
-        {mainMenu.map((item) => {
+        {navItems.map((item) => {
           const isActive = isNavItemActive(activePath, item);
 
           return (

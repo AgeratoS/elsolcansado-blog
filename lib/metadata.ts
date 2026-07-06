@@ -6,6 +6,8 @@ interface ContentMetadataOptions {
   description: string;
   slug: string;
   basePath: "posts" | "pages";
+  /** Full public path without leading slash (e.g. "about-me"). Overrides basePath/slug URL. */
+  path?: string;
 }
 
 export function generateContentMetadata({
@@ -13,7 +15,10 @@ export function generateContentMetadata({
   description,
   slug,
   basePath,
+  path,
 }: ContentMetadataOptions): Metadata {
+  const contentPath = path ?? `${basePath}/${slug}`;
+  const contentUrl = `${siteConfig.site_domain}/${contentPath}`;
   const ogUrl = new URL(`${siteConfig.site_domain}/api/og`);
   ogUrl.searchParams.append("title", title);
   ogUrl.searchParams.append("description", description);
@@ -25,7 +30,7 @@ export function generateContentMetadata({
       title,
       description,
       type: "article",
-      url: `${siteConfig.site_domain}/${basePath}/${slug}`,
+      url: contentUrl,
       images: [
         {
           url: ogUrl.toString(),
