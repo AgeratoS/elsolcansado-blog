@@ -4,7 +4,6 @@ import {
     formatPostDate,
     getReadingTimeMinutes,
 } from "@/frontend/entities/post/lib/format-post-meta";
-import { useImageBrightness } from "@/frontend/shared/lib/use-image-brightness";
 import { CategoryLabel } from "@/frontend/shared/ui/category-label";
 import type { Post } from "@/lib/wordpress.d";
 import { cn } from "@/lib/utils";
@@ -27,12 +26,9 @@ export function CardPost({
 }: CardPostProps) {
     const featuredMedia = post._embedded?.["wp:featuredmedia"]?.[0];
     const category = post._embedded?.["wp:term"]?.[0]?.[0];
-    const { isLightImage, handleImageLoad } = useImageBrightness();
     const formattedDate = formatPostDate(post.date);
     const readingTime = getReadingTimeMinutes(post.content.rendered);
     const isHero = size === "hero";
-    const hasImage = Boolean(featuredMedia?.source_url);
-    const isLightStyle = !hasImage || isLightImage;
 
     return (
         <Link
@@ -54,7 +50,6 @@ export function CardPost({
                             src={featuredMedia.source_url}
                             alt={featuredMedia.alt_text || post.title.rendered}
                             fill
-                            onLoad={handleImageLoad}
                             className="object-cover"
                             sizes={
                                 isHero
@@ -66,18 +61,18 @@ export function CardPost({
                 ) : (
                     <div className="absolute inset-0 bg-[#e6e2d8] dark:bg-secondary" />
                 )}
-                {hasImage && (
+                {featuredMedia?.source_url && (
                     <m.div
                         className={cn(
-                            "pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent transition-opacity duration-300",
-                            isLightStyle ? "opacity-0" : "opacity-100",
+                            "pointer-events-none absolute inset-0",
+                            "bg-white/55 dark:bg-black/55",
                         )}
                     />
                 )}
                 <m.div
                     className={cn(
                         "absolute bottom-6 left-6 right-6 flex flex-col gap-3",
-                        isLightStyle ? "text-foreground" : "text-white",
+                        "text-foreground dark:text-white",
                         isHero && "bottom-8 left-8 right-8 gap-4",
                     )}
                 >
@@ -115,12 +110,7 @@ export function CardPost({
                     >
                         {post.title.rendered}
                     </m.h3>
-                    <m.div
-                        className={cn(
-                            "flex items-center gap-2 text-sm",
-                            isLightStyle ? "text-muted-foreground" : "text-white/80",
-                        )}
-                    >
+                    <m.div className="flex items-center gap-2 text-sm text-muted-foreground dark:text-white/75">
                         <time dateTime={post.date}>{formattedDate}</time>
                         <span aria-hidden="true">·</span>
                         <span>{readingTime} мин</span>

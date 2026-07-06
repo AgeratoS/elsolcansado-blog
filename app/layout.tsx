@@ -3,6 +3,7 @@ import "./globals.css";
 import { Inter as FontSans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 
+import { PageTransition } from "@/frontend/shared/providers/page-transition";
 import { ThemeProvider } from "@/frontend/shared/providers/theme-provider";
 import { Header, Footer } from "@/frontend/widgets";
 import { siteConfig } from "@/site.config";
@@ -41,7 +42,7 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Header />
-          {children}
+          <PageTransition>{children}</PageTransition>
           <Footer />
         </ThemeProvider>
         <Analytics />
