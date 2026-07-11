@@ -20,7 +20,7 @@ export function FooterView({ navItems, categories }: FooterViewProps) {
           <div className="max-w-xs shrink-0">
             <Logo className="text-xl text-white" />
             <p className="mt-4 text-sm leading-relaxed text-neutral-400">
-              Независимое издание о технологиях, науке и будущем.
+              Персональный блог одного разработчика
             </p>
           </div>
 

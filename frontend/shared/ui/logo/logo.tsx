@@ -8,7 +8,7 @@ type LogoProps = {
 export function Logo({ className }: LogoProps) {
     return (
         <Link href="/" className={cn("font-bold", className)}>
-            Журнал
+            Elsolcansado-Blog.ru
         </Link>
     )
 }
