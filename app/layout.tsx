@@ -17,12 +17,15 @@ const font = FontSans({
 });
 
 export const metadata: Metadata = {
-  title: "WordPress & Next.js Starter by 9d8",
-  description:
-    "A starter template for Next.js with WordPress as a headless CMS.",
+  title: siteConfig.site_name,
+  description: siteConfig.site_description,
   metadataBase: new URL(siteConfig.site_domain),
   alternates: {
     canonical: "/",
+  },
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
 };
 

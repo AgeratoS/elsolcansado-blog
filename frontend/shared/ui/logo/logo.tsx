@@ -2,13 +2,13 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type LogoProps = {
-    className?: string;
+  className?: string;
 };
 
 export function Logo({ className }: LogoProps) {
-    return (
-        <Link href="/" className={cn("font-bold", className)}>
-            Elsolcansado-Blog.ru
-        </Link>
-    )
+  return (
+    <Link href="/" className={cn("font-bold", className)}>
+      Elsolcansado-Blog.ru
+    </Link>
+  );
 }
