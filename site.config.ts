@@ -5,9 +5,16 @@ type SiteConfig = {
   founded_year: number;
 };
 
+const defaultSiteDomain = "https://next-wp.com";
+
+function getSiteDomain(): string {
+  const domain = process.env.NEXT_PUBLIC_SITE_DOMAIN ?? defaultSiteDomain;
+  return domain.replace(/\/$/, "");
+}
+
 export const siteConfig: SiteConfig = {
-  site_name: "Elsolcansado Blog",
+  site_name: "Elsolcansado Blog: Сайт одного разработчика",
   site_description: "Сайт одного разработчика",
-  site_domain: "https://next-wp.com",
-  founded_year: 2021,
+  site_domain: getSiteDomain(),
+  founded_year: 2025,
 };
