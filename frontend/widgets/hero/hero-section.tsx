@@ -5,7 +5,7 @@ import { FileText } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-const HERO_IMAGE = "/images/hero-desk.png";
+const HERO_IMAGE = "/images/hero-desk.jpg";
 
 type HeroStat = {
     value: string;
