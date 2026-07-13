@@ -5,6 +5,7 @@ import {
   mockPostDetailAuthor,
   mockPostDetailComments,
   mockPostDetailRecentPosts,
+  mockPostDetailWithCode,
 } from "./model/mock";
 import { PostDetailView } from "./post-detail-view";
 
@@ -61,6 +62,27 @@ export const WithoutComments: Story = {
       recentPosts={mockPostDetailRecentPosts}
       comments={[]}
       totalComments={0}
+    />
+  ),
+};
+
+export const WithCodeBlocks: Story = {
+  name: "С фрагментами кода",
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: "/posts/functors-and-map-in-typescript",
+      },
+    },
+  },
+  render: () => (
+    <PostDetailView
+      post={mockPostDetailWithCode}
+      author={mockPostDetailAuthor}
+      recentPosts={mockPostDetailRecentPosts}
+      comments={mockPostDetailComments}
+      totalComments={12}
     />
   ),
 };

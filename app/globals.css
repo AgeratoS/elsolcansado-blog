@@ -208,4 +208,107 @@
         width: 100%;
         margin-inline: 0;
     }
+
+    .post-content {
+        --prism-bg: hsl(var(--muted));
+        --prism-border: hsl(var(--border));
+        --prism-base: #1f2937;
+        --prism-comment: #6b7280;
+        --prism-punctuation: #4b5563;
+        --prism-property: #0d9488;
+        --prism-string: #059669;
+        --prism-operator: #d97706;
+        --prism-keyword: #7c3aed;
+        --prism-function: #2563eb;
+        --prism-variable: #dc2626;
+    }
+
+    .dark .post-content {
+        --prism-base: #e5e7eb;
+        --prism-comment: #9ca3af;
+        --prism-punctuation: #d1d5db;
+        --prism-property: #2dd4bf;
+        --prism-string: #34d399;
+        --prism-operator: #fbbf24;
+        --prism-keyword: #c4b5fd;
+        --prism-function: #93c5fd;
+        --prism-variable: #fca5a5;
+    }
+
+    .post-content pre[class~="prism-code-block"] {
+        background-color: var(--prism-bg);
+        border: 1px solid var(--prism-border);
+        border-radius: calc(var(--radius) + 2px);
+        margin: 1.5rem 0;
+        overflow-x: auto;
+        padding: 1rem 1.25rem;
+    }
+
+    .post-content pre[class~="prism-code-block"] > code {
+        background: transparent !important;
+        border: 0;
+        color: var(--prism-base) !important;
+        display: block;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+            "Liberation Mono", "Courier New", monospace;
+        font-size: 0.875rem;
+        font-weight: 400;
+        line-height: 1.7;
+        padding: 0 !important;
+        white-space: pre;
+    }
+
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="comment"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="prolog"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="doctype"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="cdata"] {
+        color: var(--prism-comment) !important;
+        font-style: italic;
+    }
+
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="punctuation"] {
+        color: var(--prism-punctuation) !important;
+    }
+
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="property"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="tag"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="boolean"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="number"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="constant"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="symbol"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="deleted"] {
+        color: var(--prism-property) !important;
+    }
+
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="selector"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="attr-name"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="string"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="char"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="builtin"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="inserted"] {
+        color: var(--prism-string) !important;
+    }
+
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="operator"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="entity"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="url"] {
+        color: var(--prism-operator) !important;
+    }
+
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="atrule"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="attr-value"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="keyword"] {
+        color: var(--prism-keyword) !important;
+    }
+
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="function"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="class-name"] {
+        color: var(--prism-function) !important;
+    }
+
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="regex"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="important"],
+    .post-content pre[class~="prism-code-block"] code span[class~="token"][class~="variable"] {
+        color: var(--prism-variable) !important;
+    }
 }

@@ -11,6 +11,7 @@ import {
   getPostCategory,
   getPostTags,
 } from "@/frontend/entities/post/lib/get-post-terms";
+import { PostContent } from "@/frontend/widgets/post-detail/ui/post-content";
 import { PostShareButtons } from "@/frontend/widgets/post-detail/post-share-buttons";
 import { PostSidebar } from "@/frontend/widgets/post-detail/post-sidebar";
 import { Breadcrumbs } from "@/frontend/shared/ui/breadcrumbs";
@@ -43,6 +44,9 @@ export function PostDetailView({
   const readingTime = getReadingTimeMinutes(post.content.rendered);
   const viewCount = getPostViewCount(post);
   const authorAvatar = embeddedAuthor?.avatar_urls?.["96"] ?? author.avatar_urls?.["96"];
+
+  const postContentClassName =
+    "post-content prose prose-neutral max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-teal-800 prose-a:dark:text-teal-400 prose-blockquote:border-l-teal-700 prose-blockquote:dark:border-l-teal-500 prose-blockquote:bg-muted prose-blockquote:py-1 prose-blockquote:not-italic prose-code:before:content-none prose-code:after:content-none";
 
   const breadcrumbItems = [
     { label: "Главная", href: "/" },
@@ -118,9 +122,9 @@ export function PostDetailView({
             </div>
           )}
 
-          <div
-            className="prose prose-neutral max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-teal-800 prose-a:dark:text-teal-400 prose-blockquote:border-l-teal-700 prose-blockquote:dark:border-l-teal-500 prose-blockquote:bg-muted prose-blockquote:py-1 prose-blockquote:not-italic"
-            dangerouslySetInnerHTML={{ __html: post.content.rendered }}
+          <PostContent
+            html={post.content.rendered}
+            className={postContentClassName}
           />
 
           {tags.length > 0 && (

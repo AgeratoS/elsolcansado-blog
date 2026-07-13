@@ -41,6 +41,17 @@ export const mockPostDetail: Post = {
       <h2>Три ключевых направления трансформации</h2>
       <p>Первое — автоматизация рутины: транскрипция, перевод, базовая фактчекинг-проверка. Второе — персонализация контента для разных сегментов аудитории. Третье — аналитика данных для выявления трендов и скрытых историй.</p>
       <p>При всём этом редакционный контроль остаётся критически важным. Алгоритм может ошибаться, галлюцинировать факты и воспроизводить предвзятость обучающих данных.</p>
+      <h2>Пример кода</h2>
+      <p>Ниже — фрагмент TypeScript, который иллюстрирует простую обработку текста статьи:</p>
+      <pre class="wp-block-code"><code lang="typescript" class="language-typescript">type ArticleDraft = {
+  title: string;
+  body: string;
+};
+
+export function summarizeDraft(draft: ArticleDraft): string {
+  const intro = draft.body.trim().slice(0, 140);
+  return intro.length &lt; draft.body.length ? \`\${intro}...\` : intro;
+}</code></pre>
     `,
     protected: false,
   },
@@ -104,6 +115,51 @@ export const mockPostDetail: Post = {
       ],
     ],
   },
+};
+
+export const mockPostDetailWithCode: Post = {
+  ...mockPostDetail,
+  id: 101,
+  slug: "functors-and-map-in-typescript",
+  title: {
+    rendered: "Функторы и метод map в TypeScript",
+  },
+  content: {
+    rendered: `
+      <p>Метод <code>map</code> — один из базовых инструментов функционального программирования. Он позволяет преобразовать каждый элемент коллекции, не мутируя исходные данные.</p>
+      <p>Например:</p>
+      <pre class="wp-block-code"><code lang="typescript" class="language-typescript">const array: string[] = ["1", "2", "3", "4", "5", "6"]; // имеем массив строк - нехорошо, вдруг захотим найти сумму
+
+const numbers = array.map((item) =&gt; parseInt(item)); // [1, 2, 3, 4, 5, 6] - теперь это массив чисел
+
+const sum = numbers.reduce((acc, item) =&gt; acc + item, 0); // 21 - сумма всех элементов</code></pre>
+      <p>Здесь <code>map</code> выступает как функтор: он принимает функцию преобразования и возвращает новую структуру того же «типа» — массив той же длины, но с другими значениями.</p>
+      <p>Тот же приём можно применить к объектам через композицию:</p>
+      <pre class="wp-block-code"><code lang="typescript" class="language-typescript">type User = { id: number; name: string };
+
+const users: User[] = [
+  { id: 1, name: "Анна" },
+  { id: 2, name: "Борис" },
+];
+
+const names = users.map((user) =&gt; user.name);
+// ["Анна", "Борис"]</code></pre>
+      <p>Для сравнения — эквивалент на Python:</p>
+      <pre class="wp-block-code"><code lang="python" class="language-python">numbers = [int(x) for x in ["1", "2", "3", "4", "5", "6"]]
+total = sum(numbers)  # 21</code></pre>
+      <p>А вот bash-скрипт для быстрой проверки суммы из stdin:</p>
+      <pre class="wp-block-code"><code lang="bash" class="language-bash">#!/bin/bash
+paste -sd+ | bc</code></pre>
+      <p>Главное — различать <code>map</code> как преобразование и <code>reduce</code> как свёртку к одному значению.</p>
+    `,
+    protected: false,
+  },
+  excerpt: {
+    rendered:
+      "<p>Разбираем map, reduce и функторы на примерах TypeScript.</p>",
+    protected: false,
+  },
+  tags: [10, 12],
 };
 
 export const mockPostDetailRecentPosts = mockPosts
