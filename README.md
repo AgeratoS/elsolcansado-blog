@@ -97,14 +97,38 @@ openssl rand -base64 32
 - [ ] **Настройки → Постоянные ссылки** — любой вариант кроме «Простые» (нужен для REST API)
 - [ ] Проверить REST API: `{WORDPRESS_URL}/wp-json/wp/v2/posts` возвращает JSON
 - [ ] Установлена и активирована **headless-тема** (`nextjs-headless`) — входит в Docker-образ; редиректит публичный фронт WordPress на Next.js
-- [ ] Установлен и активирован плагин **`next-revalidate`** — входит в `plugin/next-revalidate`, монтируется в Docker
+- [ ] Установлен и активирован плагин **`next-revalidate`** из **`plugin/next-revalidate/`** (не из `wordpress/next-revalidate/`)
 
 ### Плагин next-revalidate
 
-- [ ] **Настройки → Next.js Revalidation**
-- [ ] **Next.js URL** — URL фронтенда (локально: `http://host.docker.internal:3000`)
+> **Важно: в репозитории две папки с плагином `next-revalidate`.**
+>
+> | Путь | Использовать? | Совместим с `/api/revalidate` |
+> |------|---------------|-------------------------------|
+> | **`plugin/next-revalidate/`** (v1.0.5) | **Да** — единственная рабочая версия | Да — payload `{ contentType, contentId }` |
+> | `wordpress/next-revalidate/` (v1.1.0) | **Нет** — устаревшая копия | Нет — payload `{ type, data, timestamp }` |
+>
+> Обе папки монтируются/копируются в `wp-content/plugins/next-revalidate`. Если на volume уже лежит старая версия, `wordpress/entrypoint.sh` **не перезапишет** её при redeploy (проверка `if [ ! -d ... ]`). После смены версии удалите папку плагина на volume или замените файлы вручную.
+>
+> **Как отличить установленную версию:**
+>
+> | Признак | `plugin/next-revalidate` | `wordpress/next-revalidate` |
+> |---------|--------------------------|----------------------------|
+> | Меню в WP | отдельный пункт **«Next.js»** | **Настройки → Next.js Revalidation** |
+> | Кнопка теста | **Revalidate All Content** | Send Test Request |
+> | Поле URL | `next_url` | `nextjs_url` |
+>
+> Проверка в контейнере WordPress:
+> ```bash
+> grep -E "Revalidate All Content|Send Test Request" \
+>   /var/www/html/wp-content/plugins/next-revalidate/next-revalidate.php
+> ```
+
+- [ ] Установлен плагин из **`plugin/next-revalidate/`** (не из `wordpress/next-revalidate/`)
+- [ ] **Next.js** (меню) → **Settings** — или аналогичный пункт плагина
+- [ ] **Next.js Site URL** — URL фронтенда (локально: `http://host.docker.internal:3000`)
 - [ ] **Webhook Secret** — совпадает с `WORDPRESS_WEBHOOK_SECRET` в `.env.local`
-- [ ] Тест: опубликовать/изменить запись → изменения появляются на фронте после revalidation
+- [ ] Тест: кнопка **Revalidate All Content** → success; опубликовать/изменить запись → изменения появляются на фронте
 
 ### Контент для разработки
 
@@ -308,8 +332,9 @@ docker compose logs -f wordpress
 ├── lib/
 │   ├── wordpress.ts            # WordPress REST API
 │   └── wordpress.d.ts          # Типы
-├── plugin/next-revalidate/     # Плагин revalidation для WordPress
-├── wordpress/                  # Docker-образ и headless-тема
+├── plugin/next-revalidate/     # Плагин revalidation для WordPress (использовать этот)
+├── wordpress/                  # Docker-образ, headless-тема
+│   └── next-revalidate/        # Устаревшая копия плагина — НЕ ставить на стенд
 ├── site.config.ts              # Название и описание сайта
 └── docker-compose.yml
 ```
@@ -361,9 +386,28 @@ export const siteConfig = {
 
 ### Revalidation не срабатывает
 
+- Установлен плагин из **`plugin/next-revalidate/`**, не из `wordpress/next-revalidate/` (см. раздел выше)
 - `WORDPRESS_WEBHOOK_SECRET` совпадает в WordPress и Next.js
-- `NEXTJS_URL` доступен **из контейнера WordPress** (локально: `host.docker.internal:3000`)
-- Плагин активен: **Настройки → Next.js Revalidation**
+- **Next.js Site URL** в плагине доступен **из контейнера WordPress** (локально: `http://host.docker.internal:3000`; на VPS — публичный URL фронта)
+- Плагин активен, в меню WP — пункт **«Next.js»**
+
+**Проверка API вручную** (должен вернуть `"revalidated": true`):
+
+```bash
+curl -X POST https://your-nextjs-domain/api/revalidate \
+  -H "Content-Type: application/json" \
+  -H "x-webhook-secret: YOUR_SECRET" \
+  -d '{"contentType": "post", "contentId": 1}'
+```
+
+**Типичные ошибки:**
+
+| Симптом | Причина | Решение |
+|---------|---------|---------|
+| `HTTP 400 — Missing content type` | Стоит `wordpress/next-revalidate/` | Заменить на `plugin/next-revalidate/` |
+| `HTTP 401 — Invalid webhook secret` | Секрет не совпадает | Сверить `WORDPRESS_WEBHOOK_SECRET` и настройку плагина |
+| Curl OK, WP — нет | Старый плагин на volume или неверный URL в настройках | Проверить версию плагина и **Next.js Site URL** |
+| `Failed to find Server Action "x"` в логах Next.js | Сканеры ботов, не связано с revalidation | Можно игнорировать |
 
 ---
 
