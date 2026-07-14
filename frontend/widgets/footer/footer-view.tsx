@@ -43,7 +43,7 @@ export function FooterView({ navItems, categories }: FooterViewProps) {
           <p className="text-center text-sm text-neutral-500">
             © {year}{" "}
             <Link href="/" className="hover:text-neutral-300">
-              Журнал
+              Elsolcansado-Blog.ru
             </Link>
             . Все права защищены.
           </p>
