@@ -1,4 +1,4 @@
-FROM wordpress:latest
+FROM wordpress:6.8
 
 # Labels for GitHub Container Registry
 LABEL org.opencontainers.image.source="https://github.com/9d8dev/next-wp"
@@ -16,6 +16,7 @@ RUN apt-get update \
 # Copy plugin and theme to staging location (volume overwrites /var/www/html)
 COPY plugin/next-revalidate /usr/src/next-revalidate
 COPY wordpress/theme /usr/src/nextjs-headless
+COPY wordpress/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
 # Copy the setup scripts
 COPY wordpress/setup.sh /usr/local/bin/setup-wordpress.sh

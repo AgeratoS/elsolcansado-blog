@@ -71,6 +71,7 @@ export function CommentsSection({
   const [replyToId, setReplyToId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState("");
   const [form, setForm] = useState<CommentFormState>({
     authorName: "",
     authorEmail: "",
@@ -134,8 +135,21 @@ export function CommentsSection({
           authorEmail: form.authorEmail,
           parent: replyToId ?? undefined,
           privacyConsent,
+          website: honeypot,
         }),
       });
+
+      if (response.status === 204) {
+        setForm({
+          authorName: form.authorName,
+          authorEmail: form.authorEmail,
+          content: "",
+        });
+        setReplyToId(null);
+        setHoneypot("");
+        setSuccess("Комментарий отправлен на модерацию");
+        return;
+      }
 
       const data = await response.json();
 
@@ -172,7 +186,7 @@ export function CommentsSection({
       </div>
 
       {commentsOpen ? (
-        <form onSubmit={handleSubmit} className="mb-10 space-y-4">
+        <form onSubmit={handleSubmit} className="relative mb-10 space-y-4">
           <div>
             <label
               htmlFor="comment-content"
@@ -218,6 +232,22 @@ export function CommentsSection({
               }
               placeholder="Email"
               required
+            />
+          </div>
+
+          <div
+            className="absolute -left-[9999px] h-0 w-0 overflow-hidden"
+            aria-hidden="true"
+          >
+            <label htmlFor="comment-website">Website</label>
+            <input
+              id="comment-website"
+              name="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={honeypot}
+              onChange={(event) => setHoneypot(event.target.value)}
             />
           </div>
 

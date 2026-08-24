@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock next/cache
 const mockRevalidateTag = vi.fn();
 const mockRevalidatePath = vi.fn();
 vi.mock("next/cache", () => ({
@@ -8,19 +7,27 @@ vi.mock("next/cache", () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
 }));
 
-// Mock next/server
 vi.mock("next/server", () => {
   class MockNextRequest {
-    private _body: unknown;
+    private _body: string | undefined;
     private _headers: Map<string, string>;
+    jsonCalled = false;
 
-    constructor(url: string, init?: { method?: string; body?: string; headers?: Record<string, string> }) {
-      this._body = init?.body ? JSON.parse(init.body) : null;
+    constructor(
+      url: string,
+      init?: {
+        method?: string;
+        body?: string;
+        headers?: Record<string, string>;
+      },
+    ) {
+      this._body = init?.body;
       this._headers = new Map(Object.entries(init?.headers ?? {}));
     }
 
     async json() {
-      return this._body;
+      this.jsonCalled = true;
+      return this._body ? JSON.parse(this._body) : null;
     }
 
     get headers() {
@@ -48,6 +55,8 @@ vi.mock("next/server", () => {
 
 import { NextRequest } from "next/server";
 
+const VALID_SECRET = "test-secret-key-ok";
+
 function createRequest(body: Record<string, unknown>, secret?: string) {
   const headers: Record<string, string> = {};
   if (secret) headers["x-webhook-secret"] = secret;
@@ -63,7 +72,7 @@ describe("POST /api/revalidate", () => {
   beforeEach(() => {
     mockRevalidateTag.mockReset();
     mockRevalidatePath.mockReset();
-    vi.stubEnv("WORDPRESS_WEBHOOK_SECRET", "test-secret");
+    vi.stubEnv("WORDPRESS_WEBHOOK_SECRET", VALID_SECRET);
   });
 
   it("returns 401 for invalid webhook secret", async () => {
@@ -73,7 +82,15 @@ describe("POST /api/revalidate", () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.message).toContain("Invalid webhook secret");
+    expect(body.message).toBe("Unauthorized");
+  });
+
+  it("does not parse JSON before authenticating", async () => {
+    const { POST } = await import("@/app/api/revalidate/route");
+    const req = createRequest({ contentType: "post" }, "wrong-secret");
+    await POST(req);
+
+    expect((req as unknown as { jsonCalled: boolean }).jsonCalled).toBe(false);
   });
 
   it("returns 401 for missing webhook secret", async () => {
@@ -84,9 +101,30 @@ describe("POST /api/revalidate", () => {
     expect(res.status).toBe(401);
   });
 
+  it("returns 503 when webhook secret is missing", async () => {
+    vi.stubEnv("WORDPRESS_WEBHOOK_SECRET", "");
+    const { POST } = await import("@/app/api/revalidate/route");
+    const req = createRequest({ contentType: "post" }, "");
+    const res = await POST(req);
+
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.message).toBe("Revalidate is not configured");
+    expect(body.error).toBeUndefined();
+  });
+
+  it("returns 503 for placeholder webhook secret", async () => {
+    vi.stubEnv("WORDPRESS_WEBHOOK_SECRET", "your-secret-key-here");
+    const { POST } = await import("@/app/api/revalidate/route");
+    const req = createRequest({ contentType: "post" }, "your-secret-key-here");
+    const res = await POST(req);
+
+    expect(res.status).toBe(503);
+  });
+
   it("returns 400 for missing contentType", async () => {
     const { POST } = await import("@/app/api/revalidate/route");
-    const req = createRequest({}, "test-secret");
+    const req = createRequest({}, VALID_SECRET);
     const res = await POST(req);
 
     expect(res.status).toBe(400);
@@ -98,7 +136,7 @@ describe("POST /api/revalidate", () => {
     const { POST } = await import("@/app/api/revalidate/route");
     const req = createRequest(
       { contentType: "post", contentId: 42 },
-      "test-secret"
+      VALID_SECRET,
     );
     const res = await POST(req);
 
@@ -116,7 +154,7 @@ describe("POST /api/revalidate", () => {
     const { POST } = await import("@/app/api/revalidate/route");
     const req = createRequest(
       { contentType: "category", contentId: 5 },
-      "test-secret"
+      VALID_SECRET,
     );
     await POST(req);
 
@@ -135,7 +173,7 @@ describe("POST /api/revalidate", () => {
     const { POST } = await import("@/app/api/revalidate/route");
     const req = createRequest(
       { contentType: "tag", contentId: 10 },
-      "test-secret"
+      VALID_SECRET,
     );
     await POST(req);
 
@@ -150,7 +188,7 @@ describe("POST /api/revalidate", () => {
     const { POST } = await import("@/app/api/revalidate/route");
     const req = createRequest(
       { contentType: "author", contentId: 2 },
-      "test-secret"
+      VALID_SECRET,
     );
     await POST(req);
 
@@ -164,7 +202,7 @@ describe("POST /api/revalidate", () => {
     const { POST } = await import("@/app/api/revalidate/route");
     const req = createRequest(
       { contentType: "user", contentId: 3 },
-      "test-secret"
+      VALID_SECRET,
     );
     await POST(req);
 
@@ -176,34 +214,34 @@ describe("POST /api/revalidate", () => {
 
   it("handles post without contentId", async () => {
     const { POST } = await import("@/app/api/revalidate/route");
-    const req = createRequest({ contentType: "post" }, "test-secret");
+    const req = createRequest({ contentType: "post" }, VALID_SECRET);
     const res = await POST(req);
 
     expect(res.status).toBe(200);
     expect(mockRevalidateTag).toHaveBeenCalledWith("posts", { expire: 0 });
-    // Should NOT have been called with a specific post tag
     expect(mockRevalidateTag).not.toHaveBeenCalledWith(
       expect.stringContaining("post-"),
-      expect.anything()
+      expect.anything(),
     );
   });
 
   it("always revalidates layout path", async () => {
     const { POST } = await import("@/app/api/revalidate/route");
-    const req = createRequest({ contentType: "post" }, "test-secret");
+    const req = createRequest({ contentType: "post" }, VALID_SECRET);
     await POST(req);
 
     expect(mockRevalidatePath).toHaveBeenCalledWith("/", "layout");
   });
 
-  it("returns revalidated response with timestamp", async () => {
+  it("returns revalidated response with timestamp and without error details", async () => {
     const { POST } = await import("@/app/api/revalidate/route");
-    const req = createRequest({ contentType: "post" }, "test-secret");
+    const req = createRequest({ contentType: "post" }, VALID_SECRET);
     const res = await POST(req);
 
     const body = await res.json();
     expect(body.revalidated).toBe(true);
     expect(body.timestamp).toBeDefined();
     expect(body.message).toContain("post");
+    expect(body.error).toBeUndefined();
   });
 });

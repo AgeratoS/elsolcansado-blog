@@ -92,4 +92,16 @@ describe("highlightCodeInHtml", () => {
     expect(result).toContain('<span class="token keyword">type</span>');
     expect(result).toContain('<span class="token keyword">export</span>');
   });
+
+  it("does not copy event handler attributes onto pre/code", () => {
+    const html =
+      '<pre onfocus="alert(1)" tabindex="0"><code class="language-javascript" onclick="alert(1)">const x = 1;</code></pre>';
+    const result = highlightCodeInHtml(html);
+
+    expect(result).not.toContain("onfocus");
+    expect(result).not.toContain("onclick");
+    expect(result).not.toContain("tabindex");
+    expect(result).toContain("prism-code-block");
+    expect(result).toContain("language-javascript");
+  });
 });

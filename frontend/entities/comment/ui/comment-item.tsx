@@ -10,8 +10,29 @@ type CommentItemProps = {
   isReply?: boolean;
 };
 
+function isSafeAvatarProtocol(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "https:") {
+      return true;
+    }
+
+    return (
+      parsed.protocol === "http:" &&
+      (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1")
+    );
+  } catch {
+    return false;
+  }
+}
+
 function getAvatarUrl(comment: Comment): string | null {
-  return comment.author_avatar_urls?.["96"] ?? null;
+  const url = comment.author_avatar_urls?.["96"] ?? null;
+  if (!url || !isSafeAvatarProtocol(url)) {
+    return null;
+  }
+
+  return url;
 }
 
 function getInitials(name: string): string {

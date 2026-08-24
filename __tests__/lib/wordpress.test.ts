@@ -82,6 +82,29 @@ describe("WordPress API", () => {
       expect(fetchUrl).toContain("page=1");
     });
 
+    it("drops non-numeric filter ids and truncates search", async () => {
+      mockFetch.mockResolvedValueOnce(
+        mockResponse([], {
+          headers: { "X-WP-Total": "0", "X-WP-TotalPages": "0" },
+        }),
+      );
+
+      const { getPostsPaginated } = await import("@/lib/wordpress");
+      await getPostsPaginated(1, 9, {
+        author: "abc",
+        category: "3",
+        tag: "7;drop",
+        search: "x".repeat(150),
+      });
+
+      const fetchUrl = mockFetch.mock.calls[0][0] as string;
+      expect(fetchUrl).not.toContain("author=abc");
+      expect(fetchUrl).toContain("categories=3");
+      expect(fetchUrl).not.toContain("7;drop");
+      expect(fetchUrl).toContain(`search=${"x".repeat(100)}`);
+      expect(fetchUrl).not.toContain(`search=${"x".repeat(101)}`);
+    });
+
     it("returns data with pagination headers", async () => {
       const posts = [{ id: 1 }, { id: 2 }];
       mockFetch.mockResolvedValueOnce(

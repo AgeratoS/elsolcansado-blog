@@ -1,15 +1,23 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
+import { siteConfig } from "@/site.config";
 
 export const runtime = "edge";
+
+const MAX_TITLE_LENGTH = 120;
+const MAX_DESCRIPTION_LENGTH = 200;
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    // Get title and description from the URL query params
-    const title = searchParams.get("title");
-    const description = searchParams.get("description");
+    const title = (searchParams.get("title")?.trim() || siteConfig.site_name).slice(
+      0,
+      MAX_TITLE_LENGTH,
+    );
+    const description = (searchParams.get("description") ?? "")
+      .trim()
+      .slice(0, MAX_DESCRIPTION_LENGTH);
 
     return new ImageResponse(
       (

@@ -12,11 +12,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Headless: разрешить гостевые комментарии через REST API для Next.js фронтенда.
-// Без этого фильтра WP возвращает rest_comment_login_required, даже если в
-// «Настройки → Обсуждение» снята галочка «нужна авторизация».
-add_filter('rest_allow_anonymous_comments', '__return_true');
-
 class Next_Revalidation {
     private $options;
     private $option_name = 'next_revalidation_settings';
@@ -156,7 +151,7 @@ class Next_Revalidation {
 
     public function webhook_secret_callback() {
         $value = isset($this->options['webhook_secret']) ? esc_attr($this->options['webhook_secret']) : '';
-        echo '<input type="text" id="webhook_secret" name="' . $this->option_name . '[webhook_secret]" value="' . $value . '" class="regular-text" />';
+        echo '<input type="password" id="webhook_secret" name="' . $this->option_name . '[webhook_secret]" value="' . $value . '" class="regular-text" autocomplete="new-password" />';
         echo '<p class="description">This should match the WORDPRESS_WEBHOOK_SECRET in your Next.js environment.</p>';
     }
 
@@ -225,7 +220,7 @@ class Next_Revalidation {
                         e.preventDefault();
                         
                         $(this).prop('disabled', true).text('Revalidating...');
-                        $('#revalidation-result').html('');
+                        $('#revalidation-result').empty();
                         
                         $.ajax({
                             url: ajaxurl,
@@ -235,11 +230,15 @@ class Next_Revalidation {
                                 nonce: '<?php echo wp_create_nonce('next_revalidation_nonce'); ?>'
                             },
                             success: function(response) {
-                                $('#revalidation-result').html('<div class="notice notice-success inline"><p>' + response.data + '</p></div>');
+                                var notice = $('<div class="notice notice-success inline"><p></p></div>');
+                                notice.find('p').text(response.data);
+                                $('#revalidation-result').empty().append(notice);
                                 $('#manual-revalidate').prop('disabled', false).text('Revalidate All Content');
                             },
                             error: function() {
-                                $('#revalidation-result').html('<div class="notice notice-error inline"><p>Failed to revalidate. Please check your settings and try again.</p></div>');
+                                var notice = $('<div class="notice notice-error inline"><p></p></div>');
+                                notice.find('p').text('Failed to revalidate. Please check your settings and try again.');
+                                $('#revalidation-result').empty().append(notice);
                                 $('#manual-revalidate').prop('disabled', false).text('Revalidate All Content');
                             }
                         });

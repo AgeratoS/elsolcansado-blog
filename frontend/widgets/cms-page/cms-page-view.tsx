@@ -1,4 +1,5 @@
 import type { Page } from "@/lib/wordpress.d";
+import { prepareWpContentHtml } from "@/lib/sanitize-html";
 
 type CmsPageViewProps = {
   page: Page;
@@ -15,7 +16,9 @@ export function CmsPageView({ page }: CmsPageViewProps) {
         </header>
         <div
           className="cms-content prose prose-neutral max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-teal-800 prose-a:dark:text-teal-400 prose-blockquote:border-l-teal-700 prose-blockquote:dark:border-l-teal-500 prose-blockquote:bg-muted prose-blockquote:py-1 prose-blockquote:not-italic"
-          dangerouslySetInnerHTML={{ __html: page.content.rendered }}
+          dangerouslySetInnerHTML={{
+            __html: prepareWpContentHtml(page.content.rendered),
+          }}
         />
       </article>
     </main>

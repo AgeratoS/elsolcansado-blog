@@ -95,28 +95,34 @@ function resolveLanguage(rawLanguage: string | null): string | null {
   return SUPPORTED_LANGUAGES.has(resolved) ? resolved : null;
 }
 
-function ensureClassAttribute(
-  attributes: string,
-  className: string,
-): string {
-  if (/\bclass=(["'])/i.test(attributes)) {
-    return attributes.replace(
-      /\bclass=(["'])([^"']*)\1/i,
-      (_, quote, existingClasses) => {
-        const classes = existingClasses.split(/\s+/).filter(Boolean);
-        if (classes.includes(className)) {
-          return `class=${quote}${existingClasses}${quote}`;
-        }
+const SAFE_CLASS_TOKEN = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 
-        return `class=${quote}${existingClasses} ${className}${quote}`;
-      },
-    );
+function extractQuotedClassTokens(attributes: string): string[] {
+  const classMatch = attributes.match(/\bclass=(["'])([^"']*)\1/i);
+  if (!classMatch) {
+    return [];
   }
 
-  const trimmedAttributes = attributes.trim();
-  return trimmedAttributes
-    ? `${trimmedAttributes} class="${className}"`
-    : ` class="${className}"`;
+  return classMatch[2]
+    .split(/\s+/)
+    .filter((token) => SAFE_CLASS_TOKEN.test(token));
+}
+
+function classAttribute(tokens: string[]): string {
+  const unique = [...new Set(tokens.filter(Boolean))];
+  if (unique.length === 0) {
+    return "";
+  }
+
+  return ` class="${unique.join(" ")}"`;
+}
+
+function safeLanguageClass(rawLanguage: string | null): string {
+  if (!rawLanguage || !SAFE_CLASS_TOKEN.test(rawLanguage)) {
+    return "language-plain";
+  }
+
+  return `language-${rawLanguage}`;
 }
 
 function highlightCodeBlock(
@@ -127,32 +133,32 @@ function highlightCodeBlock(
   const rawLanguage = extractLanguage(codeAttributes);
   const language = resolveLanguage(rawLanguage);
   const decodedCode = decodeHtmlEntities(codeContent);
+  const preClasses = extractQuotedClassTokens(preAttributes);
+  const codeClasses = extractQuotedClassTokens(codeAttributes);
 
   if (!language) {
-    const styledPreAttributes = ensureClassAttribute(
-      preAttributes,
-      "not-prose prism-code-block",
-    );
-    const styledCodeAttributes = ensureClassAttribute(
-      codeAttributes,
-      rawLanguage ? `language-${rawLanguage}` : "language-plain",
-    );
-
-    return `<pre${styledPreAttributes}><code${styledCodeAttributes}>${codeContent}</code></pre>`;
+    return `<pre${classAttribute([
+      ...preClasses,
+      "not-prose",
+      "prism-code-block",
+    ])}><code${classAttribute([
+      ...codeClasses,
+      safeLanguageClass(rawLanguage),
+    ])}>${codeContent}</code></pre>`;
   }
 
   const grammar = Prism.languages[language];
   const highlighted = Prism.highlight(decodedCode, grammar, language);
-  const highlightedPreAttributes = ensureClassAttribute(
-    preAttributes,
-    `not-prose language-${language} prism-code-block`,
-  );
-  const highlightedCodeAttributes = ensureClassAttribute(
-    codeAttributes,
-    `language-${language}`,
-  );
 
-  return `<pre${highlightedPreAttributes}><code${highlightedCodeAttributes}>${highlighted}</code></pre>`;
+  return `<pre${classAttribute([
+    ...preClasses,
+    "not-prose",
+    `language-${language}`,
+    "prism-code-block",
+  ])}><code${classAttribute([
+    ...codeClasses,
+    `language-${language}`,
+  ])}>${highlighted}</code></pre>`;
 }
 
 export function hasCodeBlocks(html: string): boolean {

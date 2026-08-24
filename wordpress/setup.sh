@@ -7,6 +7,10 @@ until wp db query "SELECT 1" --allow-root >/dev/null 2>&1; do
   sleep 3
 done
 
+if [ "${WORDPRESS_ADMIN_PASSWORD:-changeme}" = "changeme" ]; then
+  echo "WARNING: WORDPRESS_ADMIN_PASSWORD is the default 'changeme'. Change it before exposing this instance."
+fi
+
 # Check if WordPress is already installed
 if ! wp core is-installed --allow-root 2>/dev/null; then
   echo "Installing WordPress..."

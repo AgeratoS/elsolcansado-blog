@@ -82,7 +82,7 @@ class NextRevalidate {
     public function field_webhook_secret() {
         $options = get_option($this->option_name);
         $value = $options['webhook_secret'] ?? '';
-        echo '<input type="text" name="' . $this->option_name . '[webhook_secret]" value="' . esc_attr($value) . '" class="regular-text" />';
+        echo '<input type="password" name="' . $this->option_name . '[webhook_secret]" value="' . esc_attr($value) . '" class="regular-text" autocomplete="new-password" />';
         echo '<p class="description">Must match WORDPRESS_WEBHOOK_SECRET in your Next.js environment</p>';
     }
 

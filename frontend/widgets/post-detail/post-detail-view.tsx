@@ -17,6 +17,10 @@ import { PostSidebar } from "@/frontend/widgets/post-detail/post-sidebar";
 import { Breadcrumbs } from "@/frontend/shared/ui/breadcrumbs";
 import { CategoryLabel } from "@/frontend/shared/ui/category-label";
 import type { Author, Comment, Post } from "@/lib/wordpress.d";
+import {
+  isAllowedAvatarUrl,
+  prepareWpContentHtml,
+} from "@/lib/sanitize-html";
 import { Clock, Eye } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -43,7 +47,11 @@ export function PostDetailView({
   const formattedDate = formatPostDate(post.date);
   const readingTime = getReadingTimeMinutes(post.content.rendered);
   const viewCount = getPostViewCount(post);
-  const authorAvatar = embeddedAuthor?.avatar_urls?.["96"] ?? author.avatar_urls?.["96"];
+  const authorAvatarCandidate =
+    embeddedAuthor?.avatar_urls?.["96"] ?? author.avatar_urls?.["96"];
+  const authorAvatar = isAllowedAvatarUrl(authorAvatarCandidate)
+    ? authorAvatarCandidate
+    : undefined;
 
   const postContentClassName =
     "post-content prose prose-neutral max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-teal-800 prose-a:dark:text-teal-400 prose-blockquote:border-l-teal-700 prose-blockquote:dark:border-l-teal-500 prose-blockquote:bg-muted prose-blockquote:py-1 prose-blockquote:not-italic prose-code:before:content-none prose-code:after:content-none";
@@ -123,7 +131,7 @@ export function PostDetailView({
           )}
 
           <PostContent
-            html={post.content.rendered}
+            html={prepareWpContentHtml(post.content.rendered)}
             className={postContentClassName}
           />
 

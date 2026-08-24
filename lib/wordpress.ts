@@ -13,6 +13,10 @@ import type {
   Comment,
   CreateCommentInput,
 } from "./wordpress.d";
+import {
+  sanitizeAvatarUrl,
+  sanitizeCommentHtml,
+} from "./sanitize-html";
 
 // Single source of truth for WordPress configuration
 const baseUrl = process.env.WORDPRESS_URL;
@@ -48,6 +52,45 @@ export interface WordPressResponse<T> {
 
 const USER_AGENT = "Next.js WordPress Client";
 const CACHE_TTL = 3600; // 1 hour
+const MAX_SEARCH_LENGTH = 100;
+
+function sanitizeNumericFilter(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return /^\d+$/.test(value) ? value : undefined;
+}
+
+function sanitizeSearchFilter(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const trimmed = value.trim().slice(0, MAX_SEARCH_LENGTH);
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function sanitizeCommentRecord(comment: Comment): Comment {
+  const avatarUrls = comment.author_avatar_urls
+    ? Object.fromEntries(
+        Object.entries(comment.author_avatar_urls).flatMap(([size, url]) => {
+          const safeUrl = sanitizeAvatarUrl(url);
+          return safeUrl ? [[size, safeUrl]] : [];
+        }),
+      )
+    : undefined;
+
+  return {
+    ...comment,
+    content: {
+      ...comment.content,
+      rendered: sanitizeCommentHtml(comment.content?.rendered ?? ""),
+    },
+    author_avatar_urls:
+      avatarUrls && Object.keys(avatarUrls).length > 0 ? avatarUrls : undefined,
+  };
+}
 
 // Core fetch - throws on error (for functions that require data)
 async function wordpressFetch<T>(
@@ -168,22 +211,26 @@ export async function getPostsPaginated(
 
   // Build cache tags based on filters
   const cacheTags = ["wordpress", "posts", `posts-page-${page}`];
+  const search = sanitizeSearchFilter(filterParams?.search);
+  const author = sanitizeNumericFilter(filterParams?.author);
+  const tag = sanitizeNumericFilter(filterParams?.tag);
+  const category = sanitizeNumericFilter(filterParams?.category);
 
-  if (filterParams?.search) {
-    query.search = filterParams.search;
+  if (search) {
+    query.search = search;
     cacheTags.push("posts-search");
   }
-  if (filterParams?.author) {
-    query.author = filterParams.author;
-    cacheTags.push(`posts-author-${filterParams.author}`);
+  if (author) {
+    query.author = author;
+    cacheTags.push(`posts-author-${author}`);
   }
-  if (filterParams?.tag) {
-    query.tags = filterParams.tag;
-    cacheTags.push(`posts-tag-${filterParams.tag}`);
+  if (tag) {
+    query.tags = tag;
+    cacheTags.push(`posts-tag-${tag}`);
   }
-  if (filterParams?.category) {
-    query.categories = filterParams.category;
-    cacheTags.push(`posts-category-${filterParams.category}`);
+  if (category) {
+    query.categories = category;
+    cacheTags.push(`posts-category-${category}`);
   }
 
   return wordpressFetchPaginatedGraceful<Post>(
@@ -208,10 +255,22 @@ export async function getRecentPosts(filterParams?: {
     per_page: 100,
   };
 
-  if (filterParams?.search) query.search = filterParams.search;
-  if (filterParams?.author) query.author = filterParams.author;
-  if (filterParams?.tag) query.tags = filterParams.tag;
-  if (filterParams?.category) query.categories = filterParams.category;
+  if (filterParams?.search) {
+    const search = sanitizeSearchFilter(filterParams.search);
+    if (search) query.search = search;
+  }
+  if (filterParams?.author) {
+    const author = sanitizeNumericFilter(filterParams.author);
+    if (author) query.author = author;
+  }
+  if (filterParams?.tag) {
+    const tag = sanitizeNumericFilter(filterParams.tag);
+    if (tag) query.tags = tag;
+  }
+  if (filterParams?.category) {
+    const category = sanitizeNumericFilter(filterParams.category);
+    if (category) query.categories = category;
+  }
 
   return wordpressFetchGraceful<Post[]>("/wp-json/wp/v2/posts", [], query, [
     "wordpress",
@@ -504,7 +563,7 @@ export async function getCommentsByPost(
   page: number = 1,
   perPage: number = 10,
 ): Promise<WordPressResponse<Comment[]>> {
-  return wordpressFetchPaginatedGraceful<Comment>(
+  const response = await wordpressFetchPaginatedGraceful<Comment>(
     "/wp-json/wp/v2/comments",
     {
       post: postId,
@@ -515,6 +574,16 @@ export async function getCommentsByPost(
     },
     ["wordpress", "comments", `comments-post-${postId}`],
   );
+
+  return {
+    ...response,
+    data: response.data.map(sanitizeCommentRecord),
+  };
+}
+
+export async function getCommentById(id: number): Promise<Comment> {
+  const comment = await wordpressFetch<Comment>(`/wp-json/wp/v2/comments/${id}`);
+  return sanitizeCommentRecord(comment);
 }
 
 export async function createComment(
@@ -553,7 +622,7 @@ export async function createComment(
     throw new WordPressAPIError(message, response.status, url);
   }
 
-  return response.json();
+  return sanitizeCommentRecord(await response.json());
 }
 
 export { WordPressAPIError };

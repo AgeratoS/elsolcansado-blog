@@ -36,11 +36,6 @@ add_action('template_redirect', function () {
         return;
     }
 
-    // Allow XML-RPC (if needed for some integrations)
-    if (strpos($_SERVER['REQUEST_URI'], 'xmlrpc.php') !== false) {
-        return;
-    }
-
     // Get Next.js URL from environment
     $nextjs_url = getenv('NEXTJS_URL');
 
@@ -74,3 +69,5 @@ add_action('after_setup_theme', function () {
 // Headless: разрешить гостевые комментарии через REST API.
 // Настройки «Обсуждение» в админке на REST API не влияют — нужен отдельный фильтр.
 add_filter('rest_allow_anonymous_comments', '__return_true');
+
+add_filter('xmlrpc_enabled', '__return_false');
